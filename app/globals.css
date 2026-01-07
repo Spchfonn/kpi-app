@@ -20,9 +20,11 @@
   --font-sans: var(--font-ibm-plex-thai);
 
   /* font sizes */
+  --text-title: 18px;
   --text-nav: 14px;
   --text-body: 12px;
   --text-button: 13px;
+  --text-smallTitle: 10px;
 }
 
 :root {
@@ -34,4 +36,8 @@ body {
   background: var(--color-myApp-cream);
   color: var(--foreground);
   font-family: var(--font-sans), sans-serif;
+}
+
+button, input, select, textarea {
+  font-family: inherit;
 }
