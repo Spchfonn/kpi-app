@@ -41,3 +41,13 @@ body {
 button, input, select, textarea {
   font-family: inherit;
 }
+
+/* date form */
+.date-empty {
+  color: var(--color-myApp-shadow);
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 0.8;
+  filter: invert(55%) sepia(40%) saturate(500%) hue-rotate(170deg);
+}

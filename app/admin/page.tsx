@@ -20,7 +20,7 @@ const AdminHomePage = () => {
 				<Table>
 					<THead>
 						<Tr bg="blue" row="header">
-							<Th>ชื่อ</Th>
+							<Th>ชื่อรอบการประเมิน</Th>
 							<Th>วันเริ่มต้น</Th>
 							<Th>วันสิ้นสุด</Th>
 							<Th>สถานะการทำงาน</Th>

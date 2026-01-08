@@ -26,8 +26,11 @@ export default function Input({
       <input
         className={`
           px-4 py-2 rounded-lg
-          shadow-sm text-body
+          w-full max-w-md
+          shadow-sm text-body font-medium
           bg-myApp-white
+          text-myApp-blueDark
+          placeholder:text-myApp-shadow
           focus:outline-none focus:ring-2
           ${
             error
