@@ -15,6 +15,7 @@
   --color-myApp-white: #FFFFFF;
   --color-myApp-black: #262626;
   --color-myApp-shadow: #E1E1E1;
+  --color-myApp-grey: #D2D2CB;
 
   /* font */
   --font-sans: var(--font-ibm-plex-thai);
