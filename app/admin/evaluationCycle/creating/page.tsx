@@ -8,6 +8,7 @@ import React, { useState } from 'react'
 
 const CreatingEvaluationCyclePage = () => {
 	const [startDate, setStartDate] = useState("");
+	const [endDate, setEndDate] = useState("");
 
 	const [open, setOpen] = useState(false);
   const handleSaveClick = () => setOpen(true);
@@ -55,9 +56,9 @@ const CreatingEvaluationCyclePage = () => {
 					<Input
 						label="วันสิ้นสุด"
 						type="date"
-						value={startDate}
-     			 	onChange={(e) => setStartDate(e.target.value)}
-     			 	className={startDate ? "" : "date-empty"}
+						value={endDate}
+     			 	onChange={(e) => setEndDate(e.target.value)}
+     			 	className={endDate ? "" : "date-empty"}
 					/>
 					<SystemStatusCards defaultActive="define" />
 				</div>

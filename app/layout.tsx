@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Sans_Thai_Looped } from "next/font/google";
 import "./globals.css";
-import NavBar from "./NavBar";
+import AdminNavBar from "../components/admin/AdminNavBar";
 import AdminMenuBar from "../components/admin/AdminMenuBar";
 
 const ibmPlexThai = IBM_Plex_Sans_Thai_Looped({
@@ -26,7 +26,6 @@ export default function RootLayout({
       <body
         className={`${ibmPlexThai.className} antialiased`}
       >
-        <NavBar />
         <main>{children}</main>
       </body>
     </html>

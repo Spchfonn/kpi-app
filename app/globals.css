@@ -25,6 +25,8 @@
   --text-body: 12px;
   --text-button: 13px;
   --text-smallTitle: 10px;
+  --text-smallButton: 8px;
+  --text-smallestBody: 6px;
 }
 
 :root {
