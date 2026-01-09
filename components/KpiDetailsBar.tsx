@@ -2,7 +2,7 @@
 import React from "react";
 import { FiCalendar, FiChevronDown } from "react-icons/fi";
 
-type KpiType = "quantitative" | "qualitative" | "custom";
+export type KpiType = "quantitative" | "qualitative" | "custom" | null;
 
 type Props = {
   kpiType: KpiType;
@@ -36,8 +36,8 @@ function TypePill({
 	  type="button"
 	  onClick={onClick}
 	  className={`
-		h-5 px-2 py-1 rounded-full border text-smallButton font-medium transition leading-none ${borderColor}
-		${active ? `${colorClass} text-myApp-cream` : "bg-myApp-white text-myApp-blue hover:bg-myApp-shadow/40"}
+		h-6 px-2 py-1 rounded-full border text-smallButton font-medium transition leading-none ${borderColor}
+		${active ? `${colorClass} text-myApp-cream` : "bg-myApp-white text-myApp-blueDark hover:bg-myApp-shadow/40"}
 	  `}
 	>
 	  {children}
@@ -46,7 +46,7 @@ function TypePill({
 }
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
-  return <span className="text-smallTitle font-medium text-myApp-blue">{children}</span>;
+  return <span className="text-smallTitle font-medium text-myApp-blueDark">{children}</span>;
 }
 
 export default function KpiDetailsBar({
@@ -60,7 +60,7 @@ export default function KpiDetailsBar({
   onEndDateChange,
 }: Props) {
   return (
-	<div className="flex items-center gap-4 flex-wrap">
+	<div className="flex items-center gap-3 flex-wrap">
 	  {/* ประเภทตัวชี้วัด */}
 	  <div className="inline-flex items-center gap-1">
 		<FieldLabel>ประเภทตัวชี้วัด</FieldLabel>
@@ -108,8 +108,8 @@ export default function KpiDetailsBar({
 			  bg-myApp-white
 			  border border-myApp-blue
 			  rounded-full
-			  h-5 px-6 py-1 pr-7
-			  text-smallButton font-medium text-myApp-blue
+			  h-6 px-6 py-1 pr-7
+			  text-smallButton font-medium text-myApp-blueDark
 			  outline-none
 			"
 		  >
@@ -119,7 +119,7 @@ export default function KpiDetailsBar({
 			<option value="count">ครั้ง</option>
 		  </select>
 
-		  <FiChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-myApp-blue" />
+		  <FiChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-myApp-blueDark" />
 		</div>
 	  </div>
 
@@ -136,8 +136,8 @@ export default function KpiDetailsBar({
 			  bg-myApp-white
 			  border border-myApp-blue
 			  rounded-lg
-			  h-5 px-2 py-1
-			  text-smallButton font-medium text-myApp-blue
+			  h-6 pl-2 pr-1 py-1
+			  text-smallButton font-medium text-myApp-blueDark
 			  outline-none
 			"
 		  />
@@ -157,8 +157,8 @@ export default function KpiDetailsBar({
 			  bg-myApp-white
 			  border border-myApp-blue
 			  rounded-lg
-			  h-5 px-2 py-1
-			  text-smallButton font-medium text-myApp-blue
+			  h-6 pl-2 pr-1 py-1
+			  text-smallButton font-medium text-myApp-blueDark
 			  outline-none
 			"
 		  />

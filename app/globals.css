@@ -24,9 +24,11 @@
   --text-title: 18px;
   --text-nav: 14px;
   --text-body: 12px;
+  --text-body-changed: 13px;
   --text-button: 13px;
-  --text-smallTitle: 10px;
-  --text-smallButton: 8px;
+  --text-smallBody: 10px;
+  --text-smallTitle: 11px;
+  --text-smallButton: 9px;
   --text-smallestBody: 6px;
 }
 

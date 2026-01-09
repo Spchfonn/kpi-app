@@ -3,8 +3,10 @@ import Button from '@/components/Button'
 import ConfirmBox from '@/components/ConfirmBox';
 import KpiDetailsBar from '@/components/KpiDetailsBar';
 import KpiLevelBox from '@/components/KpiLevelBox'
+import ScoreBoxForQuantitativeKpi from '@/components/ScoreBoxForQuantitativeKpi';
 import { Table, TBody, Td, Th, THead, Tr } from '@/components/Table'
 import TwoLevelKpiTable from '@/components/TwoLevelKpiTable';
+import Link from 'next/link';
 import React, { useState } from 'react'
 import { FiArrowDown, FiArrowUp, FiPlusCircle, FiTrash2 } from 'react-icons/fi';
 
@@ -63,14 +65,24 @@ const page = () => {
 	setPendingDeleteId(null);
 	};
 
-	const [kpiType, setKpiType] = useState<"quantitative" | "qualitative" | "custom">("quantitative");
-	const [unit, setUnit] = useState("day");
-	const [startDate, setStartDate] = useState("2025-01-01");
-	const [endDate, setEndDate] = useState("2025-06-30");
+	const [kpiType, setKpiType] = useState<"quantitative" | "qualitative" | "custom" | null>(null);
+	const [unit, setUnit] = useState("");
+	const [startDate, setStartDate] = useState("");
+	const [endDate, setEndDate] = useState("");
+
+	const [values, setValues] = useState<Record<1|2|3|4|5, number| "">>({
+		1: "",
+		2: "",
+		3: "",
+		4: "",
+		5: "",
+	});
+
+	const [showAllDetails, setShowAllDetails] = useState(false);
 
   	return (
 	<>
-		<div className='px-20 py-7.5'>
+		<div className='px-20 py-7.5 h-[calc(100vh-56px)] flex flex-col'>
 			<div className='flex items-center mb-2.5 gap-7'>
 				<p className='text-title font-medium text-myApp-blueDark'>นางสาวรักงาน สู้ชีวิต / กำหนดตัวชี้วัด</p>
 				<div className='flex flex-1 gap-2'>
@@ -82,8 +94,19 @@ const page = () => {
 
 			{/* menu tab */}
 			<div className='flex items-center mb-3 gap-2.5'>
-				<Button variant="primary" primaryColor="blueDark">แสดงเกณฑ์คะแนน</Button>
-				<Button variant="primary" primaryColor="yellow">คัดลอกตัวชี้วัด</Button>
+				<Button 
+					variant={showAllDetails ? "outline" : "primary"}
+					primaryColor="blueDark"
+					onClick={() => setShowAllDetails((prev) => !prev)}>
+					{showAllDetails ? "ซ่อนเกณฑ์คะแนน" : "แสดงเกณฑ์คะแนน"}
+				</Button>
+				<Link href="/user/kpi/copyKpi">
+					<Button
+						variant="primary"
+						primaryColor="yellow">
+						คัดลอกตัวชี้วัด
+					</Button>
+				</Link>
 				<Button variant="primary" primaryColor="pink">ให้ระบบช่วยแนะนำตัวชี้วัด</Button>
 				<div className="flex ml-auto gap-2.5">
 					{/* if in 'view' mode, show edit button
@@ -92,119 +115,16 @@ const page = () => {
 						<Button onClick={startEdit} variant="primary" primaryColor="orange">แก้ไข</Button>
 					) : (
 						<>
-						<Button onClick={cancelEdit}>ยกเลิก</Button>
+						<Button onClick={cancelEdit} primaryColor="red">ยกเลิก</Button>
 						<Button onClick={saveEdit} variant="primary">บันทึก</Button>
 						</>
 					)}
 				</div>
 			</div>
 
-			{/* <Table>
-				<THead>
-					<Tr bg="blue" row="header">
-						<Th className='w-[72%]'>ตัวชี้วัด</Th>
-						<Th className='w-[9%]'>ค่าน้ำหนัก</Th>
-						<Th className='w-[12%]'>ความสัมพันธ์</Th>
-						{mode === "edit" && <Th className="w-[7%]"></Th>}
-					</Tr>
-				</THead>
-				<TBody>
-					<Tr>
-						<Td>
-						{mode === "edit" ? (
-							<input
-								className="w-full bg-transparent outline-none"
-								value={draft.name}
-								onChange={(e) => setDraft({ ...draft, name: e.target.value })}
-							/>
-						) : (
-							data.name
-						)}
-						</Td>
-
-						<Td className="text-center">
-						{mode === "edit" ? (
-							<input
-								type="number"
-								className="w-full bg-transparent outline-none text-center"
-								value={draft.weight}
-								onChange={(e) => setDraft({ ...draft, weight: Number(e.target.value) })}
-							/>
-						) : (
-							data.weight
-						)}
-						</Td>
-
-						<Td className="text-center">
-						{mode === "edit" ? (
-							<input
-								className="w-full bg-transparent outline-none text-center"
-								value={draft.status}
-								onChange={(e) => setDraft({ ...draft, status: e.target.value })}
-							/>
-							
-						) : (
-							data.status
-						)}
-						</Td>
-
-						{mode === "edit" && (
-						<Td className="align-middle px-0">
-							<div className='flex items-center justify-center'>
-								<button
-								type="button"
-								onClick={() => setDraft((prev) => ({ ...prev, name: "", weight: 0, status: "" }))}
-								className="mx-auto flex items-center justify-center rounded-lg text-myApp-grey
-											hover:bg-myApp-red/10 transition"
-								title="ลบแถว"
-								>
-								<FiArrowDown className="text-lg scale-x-80" />
-								</button>
-
-								<button
-								type="button"
-								onClick={() => setDraft((prev) => ({ ...prev, name: "", weight: 0, status: "" }))}
-								className="mx-auto flex items-center justify-center rounded-lg text-myApp-grey
-											hover:bg-myApp-red/10 transition"
-								title="ลบแถว"
-								>
-								<FiArrowUp className="text-lg scale-x-80" />
-								</button>
-
-								<button
-								type="button"
-								onClick={() => requestDelete(draft.id)}
-								className="mx-auto flex items-center justify-center rounded-lg text-myApp-grey
-											hover:bg-myApp-red/10 transition"
-								title="ลบแถว"
-								>
-								<FiTrash2 className="text-lg" />
-								</button>
-							</div>
-						</Td>
-						)}
-					</Tr>
-				</TBody>
-
-				{mode === "edit" && (
-				<button className='text-myApp-blueDark'>
-					<FiPlusCircle />
-				</button>
-				)}
-			</Table> */}
-
-			<TwoLevelKpiTable mode={mode} />
-
-			<KpiDetailsBar
-				kpiType={kpiType}
-				onKpiTypeChange={setKpiType}
-				unit={unit}
-				onUnitChange={setUnit}
-				startDate={startDate}
-				onStartDateChange={setStartDate}
-				endDate={endDate}
-				onEndDateChange={setEndDate}
-			/>
+			<div className='flex-1 overflow-y-auto'>
+				<TwoLevelKpiTable mode={mode} showAllDetails={showAllDetails} selectable={false}/>
+			</div>
 
 			<ConfirmBox
 				open={confirmOpen}
