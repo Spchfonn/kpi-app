@@ -1,5 +1,6 @@
 "use client";
 import Button from '@/components/Button'
+import ConfirmBox from '@/components/ConfirmBox';
 import SelectCycleDropDown from '@/components/SelectCycleDropDown';
 import TwoLevelKpiTable from '@/components/TwoLevelKpiTable'
 import SelectOwnerKpiModal from '@/components/user/SelectOwnerKpiModal';
@@ -13,11 +14,20 @@ const page = () => {
 	const [showAllDetails, setShowAllDetails] = useState(false);
 
 	const [openSelectOwnerKpiModal, setOpenSelectOwnerKpiModal] = useState(false);
-	const [filterValue, setFilterValue] = useState<string>("");
+	const [filterValue, setFilterValue] = useState<string>("op01");
 
 	const owners = [
 		{ id: "1", employeeNo: "22", name: "นางสาวรักงาน สู้ชีวิต", position: "Software Engineer", level: "ระดับ 3" },
 	];
+
+	const [open, setOpen] = useState(false);
+	const handleCopyClick = () => setOpen(true);
+	const handleConfirm = () => {
+		setOpen(false);
+		// TODO: call API บันทึกจริงตรงนี้
+		console.log("confirmed save");
+	};
+	const handleCancel = () => setOpen(false);
 
 	return (
 	<>
@@ -59,9 +69,9 @@ const page = () => {
 					value={round}
 					onChange={setRound}
 					options={[
-					{ value: "2568-2", label: "ปีการประเมิน 2568 รอบที่ 2" },
-					{ value: "2568-1", label: "ปีการประเมิน 2568 รอบที่ 1" },
-					{ value: "2567", label: "ปีการประเมิน 2567" },
+						{ value: "2568-2", label: "ปีการประเมิน 2568 รอบที่ 2" },
+						{ value: "2568-1", label: "ปีการประเมิน 2568 รอบที่ 1" },
+						{ value: "2567", label: "ปีการประเมิน 2567" },
 					]}
 				/>
 
@@ -74,7 +84,8 @@ const page = () => {
 					</Button>
 					<Button
 						variant="primary"
-						primaryColor="green">
+						primaryColor="green"
+						onClick={handleCopyClick}>
 						คัดลอกตัวชี้วัดที่เลือก
 					</Button>
 				</div>
@@ -84,14 +95,14 @@ const page = () => {
 				<TwoLevelKpiTable mode={mode} showAllDetails={showAllDetails} selectable={true} />
 			</div>
 
-			{/* <ConfirmBox
-				open={confirmOpen}
-				message="ต้องการลบตัวชี้วัดแถวนี้ใช่หรือไม่?"
+			<ConfirmBox
+				open={open}
+				message="ต้องการคัดลอกตัวชี้วัดที่เลือกไปยังการกำหนดตัวชี้วัดรอบปัจจุบันใช่หรือไม่?"
 				cancelText="ยกเลิก"
 				confirmText="ตกลง"
-				onCancel={cancelDelete}
-				onConfirm={confirmDelete}
-			/> */}
+				onCancel={handleCancel}
+				onConfirm={handleConfirm}
+			/>
 		</div>
 	</>
   )

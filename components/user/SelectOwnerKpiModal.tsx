@@ -1,7 +1,6 @@
 "use client";
-
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { FiUser, FiFilter, FiChevronDown, FiX } from "react-icons/fi";
+import { useEffect, useRef } from "react";
+import { FiUser, FiFilter, FiX } from "react-icons/fi";
 import DropDown from "../DropDown";
 
 type Owner = {

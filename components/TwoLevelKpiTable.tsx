@@ -76,46 +76,46 @@ export default function TwoLevelKpiTable({ mode, showAllDetails, selectable = fa
 	const [selected, setSelected] = useState<Set<string>>(new Set());
 	const isSelected = (id: string) => selected.has(id);
 	const toggleId = (id: string, checked: boolean) => {
-	setSelected(prev => {
-		const next = new Set(prev);
-		if (checked) next.add(id);
-		else next.delete(id);
-		return next;
-	});
+		setSelected(prev => {
+			const next = new Set(prev);
+			if (checked) next.add(id);
+			else next.delete(id);
+			return next;
+		});
 	};
 
 	const toggleParentSelect = (parentId: string, checked: boolean) => {
-	setSelected(prev => {
-		const next = new Set(prev);
-		const p = rows.find(x => x.id === parentId);
-		if (!p) return next;
+		setSelected(prev => {
+			const next = new Set(prev);
+			const p = rows.find(x => x.id === parentId);
+			if (!p) return next;
 
-		if (checked) {
-		next.add(parentId);
-		p.children.forEach(c => next.add(c.id));
-		} else {
-		next.delete(parentId);
-		p.children.forEach(c => next.delete(c.id));
-		}
-		return next;
-	});
+			if (checked) {
+			next.add(parentId);
+			p.children.forEach(c => next.add(c.id));
+			} else {
+			next.delete(parentId);
+			p.children.forEach(c => next.delete(c.id));
+			}
+			return next;
+		});
 	};
 
 	const toggleChildSelect = (parentId: string, childId: string, checked: boolean) => {
-	setSelected(prev => {
-		const next = new Set(prev);
-		if (checked) next.add(childId);
-		else next.delete(childId);
+		setSelected(prev => {
+			const next = new Set(prev);
+			if (checked) next.add(childId);
+			else next.delete(childId);
 
-		const p = rows.find(x => x.id === parentId);
-		if (!p) return next;
+			const p = rows.find(x => x.id === parentId);
+			if (!p) return next;
 
-		const allChildrenSelected = p.children.every(c => next.has(c.id));
-		if (allChildrenSelected) next.add(parentId);
-		else next.delete(parentId);
+			const allChildrenSelected = p.children.every(c => next.has(c.id));
+			if (allChildrenSelected) next.add(parentId);
+			else next.delete(parentId);
 
-		return next;
-	});
+			return next;
+		});
 	};
 
 	const colClass = mode === "edit"
@@ -348,8 +348,8 @@ export default function TwoLevelKpiTable({ mode, showAllDetails, selectable = fa
 
 							{selectable && (
 							<CheckBox
-								checked={isSelected(p.id)}
-								onChange={(ck) => toggleParentSelect(p.id, ck)}
+								checked={isSelected(c.id)}
+								onChange={(ck) => toggleChildSelect(p.id, c.id, ck)}
 							/>
 							)}
 
