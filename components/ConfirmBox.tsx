@@ -59,7 +59,7 @@ export default function ConfirmBox({
         </p>
 
         <div className="flex justify-center gap-4">
-          <Button variant="outline" onClick={onCancel}>
+          <Button variant="outline" primaryColor="red" onClick={onCancel}>
             {cancelText}
           </Button>
           <Button variant="primary" onClick={onConfirm}>
