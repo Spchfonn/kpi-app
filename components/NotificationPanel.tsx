@@ -32,7 +32,7 @@ export default function NotificationPanel({
   }, [filter, notifications]);
 
   return (
-	<aside className="w-95 max-w-[90vw]">
+	<aside className="w-full max-w-[90vw]">
 	  {/* filter tabs */}
 	  <div className="sticky top-0 z-10 bg-myApp-cream pb-2 flex gap-2">
 		<button

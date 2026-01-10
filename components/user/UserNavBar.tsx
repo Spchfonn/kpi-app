@@ -90,7 +90,7 @@ const UserNavBar = () => {
 						aria-label="Close modal"
 					/>
 
-					<div className="absolute right-0 top-0 w-104 max-w-[92vw] h-dvh">
+					<div className="absolute right-0 top-0 w-124 max-w-[100vw] h-dvh">
 						<div className="h-full bg-myApp-cream shadow-lg p-4 flex flex-col">
 							<div className="flex items-center mb-2">
 								<div className="text-button font-semibold text-myApp-blueDark">การแจ้งเตือน</div>
