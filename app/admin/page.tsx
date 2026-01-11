@@ -1,52 +1,63 @@
 "use client";
-import React from 'react'
-import AdminMenuBar from '../../components/admin/AdminMenuBar'
-import Button from '@/components/Button'
-import { Table, THead, Th, Td, Tr, TBody } from "@/components/Table";
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from "react";
+import AdminMenuBar, { type AdminTabKey } from "@/components/admin/AdminMenuBar";
+import EvaluationCycleTableClient from "./evaluationCycle/EvaluationCycleTableClient";
 
-const AdminHomePage = () => {
+type Cycle = {
+  id: number;
+  name: string;
+  startDate: string;
+  endDate: string;
+  status: "DEFINE" | "EVALUATE" | "SUMMARY";
+};
 
-	const router = useRouter();
-	
-	return (
-		<>
-			<div className='px-20 py-7.5'>
-				<AdminMenuBar />
+export default function AdminHomePage() {
+  const [tab, setTab] = useState<AdminTabKey>("evaluationCycles");
+  const [cycles, setCycles] = useState<Cycle[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-				<div className='flex items-center mt-4 mb-1'>
-					<p className='text-title font-medium text-myApp-blueDark'>รอบการประเมิน</p>
-					<Link href="/admin/evaluationCycle/creating" className="ml-auto">
-						<Button variant="primary">สร้าง</Button>
-					</Link>
-				</div>
+  const loadCycles = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/evaluationCycles", { cache: "no-store" });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.message ?? "โหลดข้อมูลไม่สำเร็จ");
+      setCycles(json.data ?? []);
+    } catch (e: any) {
+      setError(e.message ?? "โหลดข้อมูลไม่สำเร็จ");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-				<Table>
-					<THead>
-						<Tr bg="blue" row="header">
-							<Th className="w-[50%]">ชื่อรอบการประเมิน</Th>
-							<Th className="w-[15%]">วันเริ่มต้น</Th>
-							<Th className="w-[15%]">วันสิ้นสุด</Th>
-							<Th className="w-[20%]">สถานะการทำงาน</Th>
-						</Tr>
-					</THead>
-					<TBody>
-						<Tr
-							className="cursor-pointer hover:bg-myApp-shadow/30 transition"
-							onClick={() => router.push("/admin/evaluationCycle/2568-1")}
-						>
-							<Td>ปีการประเมิน 2568 รอบที่ 1</Td>
-							<Td className='text-center'>01/01/2568</Td>
-							<Td className='text-center'>30/06/2568</Td>
-							<Td className='text-center'>กำหนดตัวชี้วัด</Td>
-						</Tr>
-					</TBody>
-				</Table>
+  useEffect(() => {
+    if (tab === "evaluationCycles") loadCycles();
+  }, [tab]);
 
-			</div>
-		</>
-	)
+  const renderTab = () => {
+    if (tab === "evaluationCycles") {
+      if (loading) return <div className="mt-4">Loading...</div>;
+      if (error) return <div className="mt-4 text-red-600">{error}</div>;
+      return <EvaluationCycleTableClient cycles={cycles} />;
+    }
+
+    if (tab === "orgStructure") {
+      return <div className="mt-4">โครงสร้างองค์กร (TODO)</div>;
+    }
+
+    if (tab === "dashboard") {
+      return <div className="mt-4">Dashboard (TODO)</div>;
+    }
+
+    return null;
+  };
+
+  return (
+    <div className="px-20 py-7.5">
+      <AdminMenuBar activeTab={tab} onChange={setTab} />
+      {renderTab()}
+    </div>
+  );
 }
-
-export default AdminHomePage

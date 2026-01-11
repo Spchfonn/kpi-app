@@ -4,22 +4,62 @@ import ConfirmBox from '@/components/ConfirmBox';
 import Input from '@/components/InputField'
 import SystemStatusCards, { type StatusKey } from "@/components/SystemStatusCards";
 import Link from 'next/link'
+import { useRouter } from 'next/navigation';
 import React, { useState } from 'react'
 
 const CreatingEvaluationCyclePage = () => {
+	const router = useRouter();
+	
+	const [name, setName] = useState("");
 	const [startDate, setStartDate] = useState("");
 	const [endDate, setEndDate] = useState("");
+	const [systemStatus, setSystemStatus] = useState<StatusKey>("define");
+
+	const statusMap = {
+		define: "DEFINE",
+		evaluate: "EVALUATE",
+		summary: "SUMMARY",
+	} as const;
 
 	const [open, setOpen] = useState(false);
-  const handleSaveClick = () => setOpen(true);
-  const handleConfirm = () => {
-    setOpen(false);
-    // TODO: call API บันทึกจริงตรงนี้
-    console.log("confirmed save");
-  };
+
+  const handleSaveClick = () => {
+		if (!name || !startDate || !endDate) {
+			alert("กรอกข้อมูลให้ครบก่อน");
+			return;
+		}
+		setOpen(true);
+	};
+
   const handleCancel = () => setOpen(false);
 
-	const [systemStatus, setSystemStatus] = useState<StatusKey>("define");
+	const handleConfirm = async () => {
+		setOpen(false);
+
+		const res = await fetch("/api/evaluationCycles", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				name,
+				startDate,
+				endDate,
+				status: statusMap[systemStatus],
+			}),
+		});
+
+		const json = await res.json();
+		if (!res.ok) {
+			console.log(json);
+			alert("บันทึกไม่สำเร็จ");
+			return;
+		}
+
+		console.log("created:", json.data);
+
+		// redirect to admin home page and refresh ui
+		router.push("/admin");
+    router.refresh();
+	};
 
 	return (
 		<>
@@ -47,6 +87,8 @@ const CreatingEvaluationCyclePage = () => {
 					<Input
 						label="ชื่อรอบการประเมิน"
 						placeholder="เช่น ปีการประเมิน 2568 รอบที่ 1"
+						value={name}
+						onChange={(e) => setName(e.target.value)}
 					/>
 					<Input
 						label="วันเริ่มต้น"

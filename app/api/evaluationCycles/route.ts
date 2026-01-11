@@ -34,3 +34,11 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ ok: true, data: created }, { status: 201 });
 }
+
+// GET /api/evaluationCycles
+export async function GET() {
+    const cycles = await prisma.evaluationCycle.findMany({
+      orderBy: { id: "desc" },
+    });
+    return NextResponse.json({ ok: true, data: cycles });
+}
