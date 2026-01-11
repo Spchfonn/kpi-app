@@ -12,3 +12,17 @@ generator client {
 datasource db {
   provider = "mysql"
 }
+
+model EvaluationCycle {
+  id        Int          @id @default(autoincrement())
+  name      String       @db.VarChar(255)
+  startDate DateTime     @default(now())
+  endDate   DateTime     @default(now())
+  status    SystemStatus @default(DEFINE)
+}
+
+enum SystemStatus {
+  DEFINE
+  EVALUATE
+  SUMMARY
+}
