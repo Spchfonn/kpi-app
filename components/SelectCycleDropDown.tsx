@@ -7,7 +7,6 @@ type Option = { value: string; label: string };
 type Props = {
   value: string | null;
   onChange: (value: string) => void;
-  options: Option[];
   placeholder?: string;
   className?: string;
 };
@@ -15,12 +14,20 @@ type Props = {
 export default function SelectCycleDropDown({
   value,
   onChange,
-  options,
   placeholder = "เลือกรอบการประเมิน",
   className = "",
 }: Props) {
   const [open, setOpen] = useState(false);
+  const [options, setOptions] = useState<Option[]>([]);
   const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    (async () => {
+      const res = await fetch("/api/evaluationCycles/options", { cache: "no-store" });
+      const json = await res.json();
+      if (res.ok) setOptions(json.data ?? []);
+    })();
+  }, []);
 
   const selectedLabel = useMemo(() => {
     return options.find((o) => o.value === value)?.label ?? "";
@@ -82,28 +89,32 @@ export default function SelectCycleDropDown({
             z-50
           "
         >
-          {options.map((o) => {
-            const active = o.value === value;
-            return (
-              <button
-                key={o.value}
-                type="button"
-                onClick={() => {
-                  onChange(o.value);
-                  setOpen(false);
-                }}
-                className={`
-                  w-full px-6 py-2 text-center
-                  text-body font-medium
-                  ${active ? "bg-myApp-shadow/50 text-myApp-blueDark" : "text-myApp-blueDark"}
-                  hover:bg-myApp-shadow/50
-                  transition
-                `}
-              >
-                {o.label}
-              </button>
-            );
-          })}
+          {options.length === 0 ? (
+            <div className="px-6 py-2 text-center text-body text-myApp-shadow">
+              ไม่มีข้อมูล
+            </div>
+          ) : (
+            options.map((o) => {
+              const active = o.value === value;
+              return (
+                <button
+                  key={o.value}
+                  type="button"
+                  onClick={() => {
+                    onChange(o.value);
+                    setOpen(false);
+                  }}
+                  className={`
+                    w-full px-6 py-2 text-center text-body font-medium
+                    ${active ? "bg-myApp-shadow/50 text-myApp-blueDark" : "text-myApp-blueDark"}
+                    hover:bg-myApp-shadow/50 transition
+                  `}
+                >
+                  {o.label}
+                </button>
+              );
+            })
+          )}
         </div>
       )}
     </div>

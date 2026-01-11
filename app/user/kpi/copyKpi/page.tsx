@@ -68,11 +68,6 @@ const page = () => {
 				<SelectCycleDropDown
 					value={round}
 					onChange={setRound}
-					options={[
-						{ value: "2568-2", label: "ปีการประเมิน 2568 รอบที่ 2" },
-						{ value: "2568-1", label: "ปีการประเมิน 2568 รอบที่ 1" },
-						{ value: "2567", label: "ปีการประเมิน 2567" },
-					]}
 				/>
 
 				<div className='flex ml-auto gap-2.5'>

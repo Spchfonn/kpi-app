@@ -21,6 +21,7 @@
   --font-sans: var(--font-ibm-plex-thai);
 
   /* font sizes */
+  --text-bigTitle: 28px;
   --text-title: 18px;
   --text-nav: 14px;
   --text-body: 12px;
