@@ -20,7 +20,7 @@ type TrProps = React.HTMLAttributes<HTMLTableRowElement> & {
 };
 
 export function Table({ className = "", ...props }: React.HTMLAttributes<HTMLTableElement>) {
-  return <table className={`w-full border-separate border-spacing-y-2 ${className}`} {...props} />;
+  return <table className={`w-full table-fixed border-separate border-spacing-y-2 ${className}`} {...props} />;
 }
 
 export function THead({ className = "", ...props }: React.HTMLAttributes<HTMLTableSectionElement>) {
@@ -28,7 +28,7 @@ export function THead({ className = "", ...props }: React.HTMLAttributes<HTMLTab
 }
 
 export function TBody({ className = "", ...props }: React.HTMLAttributes<HTMLTableSectionElement>) {
-	return <tbody className={`text-myApp-blueDark text-body font-medium ${className}`} {...props} />;
+	return <tbody className={`text-myApp-blueDark text-body-changed font-medium ${className}`} {...props} />;
 }
 
 export function Tr({ bg = "white", row = "dataRow", className = "", ...props }: TrProps) {
@@ -43,7 +43,7 @@ export function Tr({ bg = "white", row = "dataRow", className = "", ...props }: 
 export function Th({ className = "", ...props }: React.ThHTMLAttributes<HTMLTableCellElement>) {
   return (
 	<th
-	  className={`font-semibold px-6 py-4 text-center relative
+	  className={`font-semibold py-4 text-center relative
 				first:rounded-l-3xl last:rounded-r-3xl
 				not-first:before:content-['']
 				not-first:before:absolute

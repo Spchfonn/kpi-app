@@ -11,8 +11,11 @@ export default function Input({
   error,
   helperText,
   className = "",
+  value,
   ...props
 }: InputProps) {
+  const safeValue = value ?? "";
+
   return (
     <div className="flex flex-col gap-1">
       {/* Label */}
