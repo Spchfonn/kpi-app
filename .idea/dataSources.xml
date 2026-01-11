@@ -8,5 +8,12 @@
       <jdbc-url>jdbc:mysql://localhost:3306/kpi_app_db</jdbc-url>
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
+    <data-source source="LOCAL" name="kpi_app_db@localhost [2]" uuid="8ca48daa-accc-4f2d-a3cb-a42875a1a53f">
+      <driver-ref>mysql.8</driver-ref>
+      <synchronize>true</synchronize>
+      <jdbc-driver>com.mysql.cj.jdbc.Driver</jdbc-driver>
+      <jdbc-url>jdbc:mysql://localhost:3306/kpi_app_db</jdbc-url>
+      <working-dir>$ProjectFileDir$</working-dir>
+    </data-source>
   </component>
 </project>
