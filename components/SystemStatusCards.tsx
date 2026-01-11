@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { FiEdit3 } from "react-icons/fi";
 
-type StatusKey = "define" | "evaluate" | "summary";
+export type StatusKey = "define" | "evaluate" | "summary";
 
 type StatusItem = {
   key: StatusKey;
@@ -37,13 +37,16 @@ const COLOR = {
 
 
 export default function SystemStatusCards({
-	defaultActive = "define",
-  }: {
-	defaultActive?: StatusKey;
-  }) {
-	const [active, setActive] = useState<StatusKey>(defaultActive);
+	active,
+  	onChange,
+  	disabled = false,
+}: {
+  	active: StatusKey;
+  	onChange: (k: StatusKey) => void;
+  	disabled?: boolean;
+}) {
 
-  return (
+  	return (
 	<section>
 	  <h2 className="text-smallTitle font-medium text-myApp-blue mb-1">
 		สถานะการทำงานของระบบ
@@ -58,13 +61,15 @@ export default function SystemStatusCards({
 			<button
 				key={it.key}
 				type="button"
-				onClick={() => setActive(it.key)}
+				disabled={disabled}
+              	onClick={() => onChange(it.key)}
 				className={`
 					w-32 h-28
 					rounded-2xl
 					flex flex-col items-center justify-center gap-4
 					shadow-sm
 					${isActive ? c.activeBg : `bg-myApp-white`}
+                	${disabled ? "cursor-not-allowed" : "hover:shadow-md"}
 				`}
 			>
 			  <div

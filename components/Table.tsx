@@ -28,7 +28,7 @@ export function THead({ className = "", ...props }: React.HTMLAttributes<HTMLTab
 }
 
 export function TBody({ className = "", ...props }: React.HTMLAttributes<HTMLTableSectionElement>) {
-	return <tbody className={`text-myApp-blueDark text-body font-medium ${className}`} {...props} />;
+	return <tbody className={`text-myApp-blueDark text-body-changed font-medium ${className}`} {...props} />;
 }
 
 export function Tr({ bg = "white", row = "dataRow", className = "", ...props }: TrProps) {

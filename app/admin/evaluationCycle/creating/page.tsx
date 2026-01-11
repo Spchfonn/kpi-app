@@ -2,7 +2,7 @@
 import Button from '@/components/Button'
 import ConfirmBox from '@/components/ConfirmBox';
 import Input from '@/components/InputField'
-import SystemStatusCards from '@/components/SystemStatusCards';
+import SystemStatusCards, { type StatusKey } from "@/components/SystemStatusCards";
 import Link from 'next/link'
 import React, { useState } from 'react'
 
@@ -18,6 +18,8 @@ const CreatingEvaluationCyclePage = () => {
     console.log("confirmed save");
   };
   const handleCancel = () => setOpen(false);
+
+	const [systemStatus, setSystemStatus] = useState<StatusKey>("define");
 
 	return (
 		<>
@@ -60,7 +62,10 @@ const CreatingEvaluationCyclePage = () => {
      			 	onChange={(e) => setEndDate(e.target.value)}
      			 	className={endDate ? "" : "date-empty"}
 					/>
-					<SystemStatusCards defaultActive="define" />
+					<SystemStatusCards
+						active={systemStatus}
+						onChange={setSystemStatus}
+					/>
 				</div>
 
 			</div>
