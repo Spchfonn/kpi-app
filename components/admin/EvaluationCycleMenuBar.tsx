@@ -4,7 +4,7 @@ import Link from 'next/link'
 export type TabKey = "basic" | "peer" | "employeeStatus" | "kpiStructure" | "dashboard";
 
 const base =
-  "px-3 py-1 text-body font-medium rounded-full border-2 transition-colors";
+  "px-3 py-1.5 text-body font-medium rounded-full border-2 transition-colors";
 
 function tabClass(active: boolean) {
   return active

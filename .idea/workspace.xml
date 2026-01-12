@@ -5,12 +5,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="efa7c69f-6049-41ab-9563-086e6e42c610" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/admin/evaluationCycle/creating/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/admin/evaluationCycle/creating/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/admin/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/admin/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/evaluationCycles/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/evaluationCycles/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/components/admin/AdminMenuBar.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/admin/AdminMenuBar.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/admin/evaluationCycle/[id]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/admin/evaluationCycle/[id]/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/DropDown.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/DropDown.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/TwoLevelKpiTable.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/TwoLevelKpiTable.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/user/SelectOwnerKpiModal.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/user/SelectOwnerKpiModal.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -28,20 +26,20 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "frontend",
-    "last_opened_file_path": "/Users/fonspch"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;frontend&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/Users/fonspch&quot;
   },
-  "keyToStringList": {
-    "DatabaseDriversLRU": [
-      "mysql"
+  &quot;keyToStringList&quot;: {
+    &quot;DatabaseDriversLRU&quot;: [
+      &quot;mysql&quot;
     ]
   }
-}]]></component>
+}</component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
       <changelist id="efa7c69f-6049-41ab-9563-086e6e42c610" name="Changes" comment="" />
