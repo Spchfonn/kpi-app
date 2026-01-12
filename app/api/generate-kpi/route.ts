@@ -4,7 +4,7 @@ const OPENAI_API_KEY = process.env.OPENAI_API_KEY!;
 const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
 
 /**
- * ฟังก์ชันเรียกใช้ OpenAI Chat API
+ * ฟังก์ชันเรียกใช้ OpenAI Chat API โย่ว
  * @param messages array ของข้อความสำหรับ model
  */
 async function callChatGPT(messages: any[]) {
