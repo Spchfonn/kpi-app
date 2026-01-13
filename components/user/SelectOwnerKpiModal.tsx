@@ -37,8 +37,7 @@ export default function SelectOwnerKpiModal({
   filterValue = "",
   filterOptions = [	{ value: "op01", label: "ตัวชี้วัดของผู้รับการประเมิน" },
 					{ value: "op02", label: "ตัวชี้วัดของผู้ระดับสูงกว่า" },
-					{ value: "op03", label: "ตัวชี้วัดของผู้รับการประเมินอื่น" },
-  ],
+					{ value: "op03", label: "ตัวชี้วัดของผู้รับการประเมินอื่น" },],
   onFilterChange,
 }: Props) {
   const panelRef = useRef<HTMLDivElement>(null);

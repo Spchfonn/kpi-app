@@ -73,7 +73,7 @@ export default function DropDown({
       {open && (
         <div
           className="
-            absolute left-0 right-0 mt-2
+            absolute left-0 right-0 mt-1
             rounded-2xl
             border-2 border-myApp-blueDark
             bg-myApp-white
