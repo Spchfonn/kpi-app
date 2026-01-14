@@ -85,6 +85,7 @@ model Organization {
   manager   Employee? @relation("OrgManager", fields: [managerId], references: [id])
 
   employees Employee[]
+  histories EmploymentHistory[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -98,7 +99,8 @@ model JobTitle {
   code      String @unique
   name      String
 
-  employees Employee[]
+  employees Employee[]  
+  histories EmploymentHistory[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -110,6 +112,7 @@ model Position {
   name      String
 
   employees Employee[]
+  histories EmploymentHistory[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -121,6 +124,7 @@ model Level {
   name      String
 
   employees Employee[]
+  histories EmploymentHistory[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -158,6 +162,8 @@ model Employee {
   jobDescription String?
   isActive       Boolean @default(true)
 
+  histories EmploymentHistory[]
+
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -168,6 +174,34 @@ model Employee {
   @@index([jobTitleId])
   @@index([positionId])
   @@index([levelId])
+}
+
+model EmploymentHistory {
+  id         String @id @default(uuid())
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id])
+
+  jobTitleId String
+  jobTitle   JobTitle @relation(fields: [jobTitleId], references: [id])
+
+  positionId String
+  position   Position @relation(fields: [positionId], references: [id])
+
+  levelId    String
+  level      Level @relation(fields: [levelId], references: [id])
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  startDate  DateTime
+  endDate    DateTime?
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([employeeId, startDate])
+  @@index([employeeId, endDate])
+  @@index([organizationId, startDate])
 }
 
 model EvaluationAssignment {
