@@ -9,31 +9,58 @@ const schema = z.object({
   status: z.enum(["DEFINE", "EVALUATE", "SUMMARY"]),
 }).refine(v => v.endDate >= v.startDate, { path: ["endDate"], message: "endDate must be >= startDate" });
 
-export async function POST(request: Request) {
-  const body = await request.json();
-  const v = schema.safeParse(body);
-  if (!v.success) {
-    return NextResponse.json({ ok: false, errors: v.error.flatten() }, { status: 400 });
-  }
-
-  const { name, startDate, endDate, status } = v.data;
-
-  const startDT = `${startDate} 00:00:00`;
-  const endDT = `${endDate} 00:00:00`;
-
-  // ใส่ค่า DATETIME แบบ "00:00:00" ตรง ๆ
-  await prisma.$executeRaw`
-    INSERT INTO EvaluationCycle (name, startDate, endDate, status)
-    VALUES (${name}, ${startDT}, ${endDT}, ${status})
-  `;
-
-  // ดึงแถวล่าสุดกลับไป (ง่ายสุด)
-  const created = await prisma.evaluationCycle.findFirst({
-    orderBy: { id: "desc" },
-  });
-
-  return NextResponse.json({ ok: true, data: created }, { status: 201 });
+function toYmdCompact(d: string) {
+    // d: "YYYY-MM-DD" -> "YYYYMMDD"
+    return d.replaceAll("-", "");
 }
+  
+function genCode(startDate: string, endDate: string) {
+return `EC-${toYmdCompact(startDate)}-${toYmdCompact(endDate)}`;
+}
+
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    const v = schema.safeParse(body);
+    if (v.success === false) {
+    return NextResponse.json(
+        { ok: false, errors: v.error.flatten() },
+        { status: 400 }
+    );
+    }
+
+    const { name, startDate, endDate, status } = v.data;
+
+    const code = genCode(startDate, endDate);
+    // avoid duplicated code
+    const exists = await prisma.evaluationCycle.findUnique({ where: { code } });
+    if (exists) {
+        return NextResponse.json(
+        { ok: false, message: "code already exists", code },
+        { status: 409 }
+        );
+    }
+
+    const created = await prisma.evaluationCycle.create({
+        data: {
+        name,
+        code: code,
+        startDate: new Date(`${startDate}T00:00:00`),
+        endDate: new Date(`${endDate}T00:00:00`),
+        status,
+        },
+    });
+
+    return NextResponse.json({ ok: true, data: created }, { status: 201 });
+    } catch (err: any) {
+        console.error("POST /api/evaluationCycles error:", err);
+        return NextResponse.json(
+        { ok: false, message: err?.message ?? "Internal Server Error" },
+        { status: 500 }
+        );
+  }
+}
+
 
 // GET /api/evaluationCycles
 export async function GET() {
