@@ -68,7 +68,7 @@ const CreatingEvaluationCyclePage = () => {
 				<div className='flex items-center mb-4'>
 					<p className='text-title font-medium text-myApp-blueDark'>รอบการประเมิน (สร้าง)</p>
 					<div className="flex ml-auto gap-2.5">
-						<Button primaryColor="red">ยกเลิก</Button>
+						<Button primaryColor="red" onClick={() => router.push("/admin")}>ยกเลิก</Button>
 						<Button variant="primary" onClick={handleSaveClick}>บันทึก</Button>
 					</div>
 				</div>

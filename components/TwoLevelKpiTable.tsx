@@ -238,7 +238,7 @@ export default function TwoLevelKpiTable({ mode, showAllDetails, selectable = fa
 	<div className="w-full">
 	  {/* header */}
 	  <div className="sticky top-0 z-20 bg-myApp-cream">
-		<div className="bg-myApp-blue rounded-full shadow-sm px-4 py-4 text-myApp-cream text-button font-semibold">
+		<div className="bg-myApp-blue rounded-3xl shadow-sm px-4 py-4 text-myApp-cream text-button font-semibold">
 			<div className={`${colClass} place-items-center`}>
 			<div>ตัวชี้วัด</div>
 			<div>ค่าน้ำหนัก</div>
@@ -253,7 +253,7 @@ export default function TwoLevelKpiTable({ mode, showAllDetails, selectable = fa
 		{rows.map((p) => (
 		  <div key={p.id}>
 			{/* parent row */}
-			<div className="bg-myApp-white rounded-2xl shadow-sm px-4 py-3">
+			<div className="bg-myApp-white rounded-xl shadow-sm px-4 py-3">
 			  <div className={`${colClass}`}>
 				<div className="flex items-center gap-1 text-myApp-blueDark">
 				
@@ -267,7 +267,7 @@ export default function TwoLevelKpiTable({ mode, showAllDetails, selectable = fa
 					<button
 						type="button"
 						onClick={() => toggleExpand(p.id)}
-						className="p-1 rounded-md hover:bg-myApp-shadow/40 transition"
+						className="p-1 rounded-xl hover:bg-myApp-shadow/40 transition"
 						title="ขยาย/ย่อ"
 					>
 						{p.expanded ? <FiChevronDown /> : <FiChevronRight />}
@@ -342,7 +342,7 @@ export default function TwoLevelKpiTable({ mode, showAllDetails, selectable = fa
 			{p.expanded && (
 			  <div className="mt-2 space-y-2">
 				{p.children.map((c) => (
-				  <div key={c.id} className="bg-myApp-white rounded-2xl shadow-sm px-4 py-3 ml-10">
+				  <div key={c.id} className="bg-myApp-white rounded-xl shadow-sm px-4 py-3 ml-10">
 					<div className={`${colClass}`}>
 						<div className="text-myApp-blueDark flex gap-2">
 
@@ -417,7 +417,7 @@ export default function TwoLevelKpiTable({ mode, showAllDetails, selectable = fa
 					</div>
 
 					{showAllDetails && (
-						<div className="mt-2 rounded-2xl px-4">
+						<div className="mt-2 rounded-xl px-4">
 							<KpiDetailsBar
 								kpiType={kpiType}
 								onKpiTypeChange={setKpiType}

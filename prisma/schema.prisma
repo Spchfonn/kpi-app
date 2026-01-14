@@ -13,16 +13,303 @@ datasource db {
   provider = "mysql"
 }
 
-model EvaluationCycle {
-  id        Int          @id @default(autoincrement())
-  name      String       @db.VarChar(255)
-  startDate DateTime     @default(now())
-  endDate   DateTime     @default(now())
-  status    SystemStatus @default(DEFINE)
-}
-
+/////////////////////// define option
 enum SystemStatus {
   DEFINE
   EVALUATE
   SUMMARY
+}
+
+enum PlanStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum KpiNodeType {
+  GROUP
+  ITEM
+}
+
+enum KpiTypeChoices {
+  QUANTITATIVE
+  QUALITATIVE
+  CUSTOM
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  UNSPECIFIED
+}
+
+enum PrefixName {
+  MR
+  MRS
+  MS
+}
+
+/////////////////////// define model
+
+// EvaluationCycle
+//   └── EvaluationAssignment (evaluatee + evaluator + weight)
+//         └── KpiPlan (versioned)
+//               └── KpiNode (tree)
+//                     └── KpiSubmission
+
+model EvaluationCycle {
+  id        Int          @id @default(autoincrement())
+  publicId  String       @unique @default(uuid())  // เพิ่ม UUID แยก
+  code      String       @unique
+  name      String       @db.VarChar(255)
+  startDate DateTime
+  endDate   DateTime
+  status    SystemStatus @default(DEFINE)
+
+  assignments EvaluationAssignment[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Organization {
+  id        String @id @default(uuid())
+  code      String @unique
+  name      String
+
+  parentId  String?
+  parent    Organization? @relation("OrgTree", fields: [parentId], references: [id])
+  children  Organization[] @relation("OrgTree")
+
+  managerId String?
+  manager   Employee? @relation("OrgManager", fields: [managerId], references: [id])
+
+  employees Employee[]
+  histories EmploymentHistory[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([parentId])
+  @@index([managerId])
+}
+
+model JobTitle {
+  id        String @id @default(uuid())
+  code      String @unique
+  name      String
+
+  employees Employee[]  
+  histories EmploymentHistory[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Position {
+  id        String @id @default(uuid())
+  code      String @unique
+  name      String
+
+  employees Employee[]
+  histories EmploymentHistory[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Level {
+  id        String @id @default(uuid())
+  code      String @unique   // เช่น L1, L2, Senior, Manager
+  name      String
+
+  employees Employee[]
+  histories EmploymentHistory[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Employee {
+  id             String   @id @default(uuid())
+  prefixName     PrefixName
+  name           String
+  lastName       String
+  nickname       String
+  employeeNo     String   @unique
+  birthDate      DateTime?
+  gender         Gender? @default(UNSPECIFIED)
+  email          String   @unique
+  phone          String?
+
+  startDate      DateTime
+  terminatedDate DateTime?
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  managedOrganizations Organization[] @relation("OrgManager")
+
+  jobTitleId String
+  jobTitle   JobTitle @relation(fields: [jobTitleId], references: [id])
+
+  positionId     String
+  position       Position @relation(fields: [positionId], references: [id])
+
+  levelId        String
+  level          Level @relation(fields: [levelId], references: [id])
+
+  jobDescription String?
+  isActive       Boolean @default(true)
+
+  histories EmploymentHistory[]
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  evaluatorAssignments EvaluationAssignment[] @relation("Evaluator")
+  evaluateeAssignments EvaluationAssignment[] @relation("Evaluatee")
+
+  @@index([organizationId])
+  @@index([jobTitleId])
+  @@index([positionId])
+  @@index([levelId])
+}
+
+model EmploymentHistory {
+  id         String @id @default(uuid())
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id])
+
+  jobTitleId String
+  jobTitle   JobTitle @relation(fields: [jobTitleId], references: [id])
+
+  positionId String
+  position   Position @relation(fields: [positionId], references: [id])
+
+  levelId    String
+  level      Level @relation(fields: [levelId], references: [id])
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  startDate  DateTime
+  endDate    DateTime?
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([employeeId, startDate])
+  @@index([employeeId, endDate])
+  @@index([organizationId, startDate])
+}
+
+model EvaluationAssignment {
+  id            String @id @default(uuid())
+
+  cycleId       Int
+  cycle         EvaluationCycle @relation(fields: [cycleId], references: [id])
+
+  evaluatorId   String
+  evaluator     Employee @relation("Evaluator", fields: [evaluatorId], references: [id])
+
+  evaluateeId   String
+  evaluatee     Employee @relation("Evaluatee", fields: [evaluateeId], references: [id])
+
+  weightPercent Decimal @db.Decimal(5,2)
+
+  plans         KpiPlan[]
+  currentPlanId String? @unique
+  currentPlan   KpiPlan? @relation("AssignmentCurrentPlan", fields: [currentPlanId], references: [id])
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([cycleId, evaluatorId, evaluateeId])
+  @@index([evaluateeId, cycleId])
+  @@index([evaluatorId, cycleId])
+}
+
+model KpiType {
+  id        String   @id @default(uuid())
+  type      KpiTypeChoices
+  name      String
+  rubric    Json     // scoring by type
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  nodes     KpiNode[]
+}
+
+model KpiPlan {
+  id            String @id @default(uuid())
+
+  assignmentId  String
+  assignment    EvaluationAssignment @relation(fields: [assignmentId], references: [id])
+  currentOfAssignment EvaluationAssignment? @relation("AssignmentCurrentPlan")
+
+  version       Int
+  status        PlanStatus @default(DRAFT)
+
+  nodes         KpiNode[]
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([assignmentId, version])
+  @@index([assignmentId, status])
+}
+
+model KpiNode {
+  id            String @id @default(uuid())
+  planId        String
+  plan          KpiPlan @relation(fields: [planId], references: [id])
+
+  nodeType      KpiNodeType
+  title         String
+  description   String?
+
+  parentId      String?
+  parent        KpiNode? @relation("NodeParent", fields: [parentId], references: [id])
+  children      KpiNode[] @relation("NodeParent")
+
+  weightPercent Decimal @db.Decimal(5,2)
+
+  // เฉพาะ ITEM
+  typeId        String?
+  type          KpiType? @relation(fields: [typeId], references: [id])
+  unit          String?
+
+  submissions KpiSubmission[] @relation("NodeSubmissions")
+
+  currentSubmissionId String? @unique
+  currentSubmission   KpiSubmission? @relation("NodeCurrentSubmission", fields: [currentSubmissionId], references: [id])
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([planId])
+  @@index([parentId])
+}
+
+model KpiSubmission {
+  id        String @id @default(uuid())
+  nodeId    String
+  node   KpiNode @relation("NodeSubmissions", fields: [nodeId], references: [id])
+
+  // back relation ของ currentSubmission (optional)
+  currentOfNode KpiNode? @relation("NodeCurrentSubmission")
+
+  version   Int
+  payload   Json
+  calculatedScore Int?
+  finalScore      Int?
+  note      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([nodeId, version])
+  @@index([nodeId, createdAt])
 }

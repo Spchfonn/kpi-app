@@ -4,14 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="efa7c69f-6049-41ab-9563-086e6e42c610" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/admin/evaluationCycle/creating/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/admin/evaluationCycle/creating/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/admin/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/admin/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/evaluationCycles/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/evaluationCycles/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/components/admin/AdminMenuBar.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/admin/AdminMenuBar.tsx" afterDir="false" />
-    </list>
+    <list default="true" id="efa7c69f-6049-41ab-9563-086e6e42c610" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -33,7 +26,7 @@
     "ModuleVcsDetector.initialDetectionPerformed": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "frontend",
+    "git-widget-placeholder": "main",
     "last_opened_file_path": "/Users/fonspch"
   },
   "keyToStringList": {
