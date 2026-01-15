@@ -63,8 +63,8 @@ model EvaluationCycle {
   publicId  String       @unique @default(uuid())  // เพิ่ม UUID แยก
   code      String       @unique
   name      String       @db.VarChar(255)
-  startDate DateTime
-  endDate   DateTime
+  startDate DateTime     @db.DateTime(0)
+  endDate   DateTime     @db.DateTime(0)
   status    SystemStatus @default(DEFINE)
 
   assignments EvaluationAssignment[]
@@ -137,7 +137,7 @@ model Employee {
   lastName       String
   nickname       String
   employeeNo     String   @unique
-  birthDate      DateTime?
+  birthDate      DateTime? @db.DateTime(0)
   gender         Gender? @default(UNSPECIFIED)
   email          String   @unique
   phone          String?
@@ -193,8 +193,8 @@ model EmploymentHistory {
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
 
-  startDate  DateTime
-  endDate    DateTime?
+  startDate DateTime     @db.DateTime(0)
+  endDate   DateTime?    @db.DateTime(0)
 
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
