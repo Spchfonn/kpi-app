@@ -274,6 +274,8 @@ model KpiNode {
   parent        KpiNode? @relation("NodeParent", fields: [parentId], references: [id])
   children      KpiNode[] @relation("NodeParent")
 
+  sortOrder Int @default(0)
+
   weightPercent Decimal @db.Decimal(5,2)
 
   // เฉพาะ ITEM
@@ -293,6 +295,7 @@ model KpiNode {
 
   @@index([planId])
   @@index([parentId])
+  @@index([planId, parentId, sortOrder])
 }
 
 model KpiSubmission {
