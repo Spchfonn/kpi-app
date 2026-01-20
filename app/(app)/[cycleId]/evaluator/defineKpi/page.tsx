@@ -1,6 +1,6 @@
 "use client";
 import DefinedStatus from '@/components/DefinedStatus';
-import EvaluateeCard from '@/components/EvaluateeCard'
+import EvaluateeCardForDefineKpi from '@/components/EvaluateeCardForDefineKpi'
 import React, { useState } from 'react'
 
 export default function ProfilePage({ params }: { params: { id: string } })  {
@@ -15,24 +15,24 @@ export default function ProfilePage({ params }: { params: { id: string } })  {
 			</div>
 
 			<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
-				<EvaluateeCard
+				<EvaluateeCardForDefineKpi
 					id="01"
 					name="นางสาวรักงาน สู้ชีวิต"
 					title="Software Engineer Level 3"
 				/>
-				<EvaluateeCard
+				<EvaluateeCardForDefineKpi
 					id="02"
 					name="นางสาวรักงาน สู้ชีวิต"
 					title="Software Engineer Level 3"
 					stripColor="yellow"
 				/>
-				<EvaluateeCard
+				<EvaluateeCardForDefineKpi
 					id="03"
 					name="นางสาวรักงาน สู้ชีวิต"
 					title="Software Engineer Level 3"
 					stripColor="yellow"
 				/>
-				<EvaluateeCard
+				<EvaluateeCardForDefineKpi
 					id="04"
 					name="นางสาวรักงาน สู้ชีวิต"
 					title="Software Engineer Level 3"

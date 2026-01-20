@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     const v = schema.safeParse(body);
     if (v.success === false) {
     return NextResponse.json(
-        { ok: false, errors: v.error.flatten() },
+        { ok: false, errors: z.treeifyError(v.error) },
         { status: 400 }
     );
     }
@@ -45,8 +45,8 @@ export async function POST(request: Request) {
         data: {
         name,
         code: code,
-        startDate: new Date(`${startDate}T00:00:00`),
-        endDate: new Date(`${endDate}T00:00:00`),
+        startDate: `${startDate}T00:00:00.000+07:00`,
+        endDate: `${endDate}T00:00:00.000+07:00`,
         status,
         },
     });
@@ -61,11 +61,26 @@ export async function POST(request: Request) {
   }
 }
 
+function toYmdBangkok(d: Date) {
+    return new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Bangkok",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(d); // YYYY-MM-DD
+}
 
 // GET /api/evaluationCycles
 export async function GET() {
     const cycles = await prisma.evaluationCycle.findMany({
-      orderBy: { id: "desc" },
+        orderBy: { id: "desc" },
     });
-    return NextResponse.json({ ok: true, data: cycles });
+
+    const data = cycles.map((c) => ({
+        ...c,
+        startDateYmd: toYmdBangkok(c.startDate),
+        endDateYmd: toYmdBangkok(c.endDate),
+    }));
+
+    return NextResponse.json({ ok: true, data });
 }

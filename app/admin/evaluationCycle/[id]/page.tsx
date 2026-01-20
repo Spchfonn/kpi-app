@@ -10,6 +10,12 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { FiTrash2, FiUser } from "react-icons/fi";
 
+function apiStatusToKey(s: "DEFINE" | "EVALUATE" | "SUMMARY"): StatusKey {
+	if (s === "DEFINE") return "define";
+	if (s === "EVALUATE") return "evaluate";
+	return "summary";
+}
+
 export default function Page() {
 
 	const { id } = useParams<{ id: string }>();
@@ -56,20 +62,36 @@ export default function Page() {
 		if (tab === "basic") setDraft(data);
 		if (tab === "peer") setDetailEvaluatees(selectedGroup?.evaluatees ?? []);
 	};
-	  
-	const saveEdit = () => {
+
+	const saveEdit = async () => {
 		if (tab === "basic") {
-		  setData(draft);
-		  // TODO: call API save basic (ใช้ id)
+			const res = await fetch(`/api/evaluationCycles/${id}`, {
+				method: "PATCH",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					name: draft.name,
+					startDate: draft.startDate,
+					endDate: draft.endDate,
+					status: draft.systemStatus.toUpperCase(),
+				}),
+			});
+		
+			const json = await res.json().catch(() => null);
+			if (!res.ok) {
+				console.error("PATCH failed", json);
+				return; // ไม่ปิด edit mode ถ้าบันทึกไม่สำเร็จ
+			}
+		
+			setData(draft);
 		}
-	  
+
 		if (tab === "peer") {
-		  // TODO: call API save pairs using detailEvaluatees / selectedGroup
-		  // ตัวอย่าง: await updatePairs({ evaluatorId, evaluatees: detailEvaluatees })
+			// TODO: call API save pairs using detailEvaluatees / selectedGroup
+			// ตัวอย่าง: await updatePairs({ evaluatorId, evaluatees: detailEvaluatees })
 		}
 	  
 		setEditModeByTab((prev) => ({ ...prev, [tab]: "view" }));
-	};
+	  };
 
 	const canEditTab: Partial<Record<TabKey, boolean>> = {
 		basic: true,
@@ -213,6 +235,31 @@ export default function Page() {
 	setDetailEvaluatees((prev) => prev.filter((_, i) => i !== deleteIdx));
 	closeDelete();
 	};
+
+	useEffect(() => {
+		if (!id) return;
+	  
+		(async () => {
+		  const res = await fetch(`/api/evaluationCycles/${id}`, { cache: "no-store" });
+		  const json = await res.json();
+		  if (!res.ok) {
+			console.error(json);
+			return;
+		  }
+	  
+		  const c = json.data;
+	  
+		  const next: EvalCycleForm = {
+			name: c.name ?? "",
+			startDate: c.startDateYmd ?? "",
+			endDate: c.endDateYmd ?? "",
+			systemStatus: apiStatusToKey(c.status),
+		  };
+	  
+		  setData(next);
+		  setDraft(next);
+		})();
+	}, [id]);
 
 	const renderTab = () => {
 		switch (tab) {
