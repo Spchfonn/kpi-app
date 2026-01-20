@@ -280,6 +280,8 @@ model KpiNode {
   typeId        String?
   type          KpiType? @relation(fields: [typeId], references: [id])
   unit          String?
+  startDate     DateTime? @db.DateTime(0)
+  endDate       DateTime? @db.DateTime(0)
 
   submissions KpiSubmission[] @relation("NodeSubmissions")
 
