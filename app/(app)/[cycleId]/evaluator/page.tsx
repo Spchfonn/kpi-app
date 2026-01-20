@@ -2,18 +2,19 @@ import { redirect, notFound } from "next/navigation";
 import { prisma } from "@/prisma/client";
 
 type Props = {
-  params: { cycleId: string };
+  params: Promise<{ cycleId: string }>;
 };
 
 export default async function EvaluatorLanding({ params }: Props) {
-  const cycleId = Number(params.cycleId);
+  const { cycleId } = await params;
+  const id = Number(cycleId);
 
-  if (!Number.isFinite(cycleId)) {
+  if (!Number.isFinite(id)) {
     notFound();
   }
 
   const cycle = await prisma.evaluationCycle.findUnique({
-    where: { id: cycleId },
+    where: { id },
     select: { status: true },
   });
 
