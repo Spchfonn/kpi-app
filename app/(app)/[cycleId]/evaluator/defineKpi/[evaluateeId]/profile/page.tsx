@@ -3,11 +3,13 @@ import Button from '@/components/Button'
 import ConfirmBox from '@/components/ConfirmBox';
 import Input from '@/components/InputField'
 import SystemStatusCards from '@/components/SystemStatusCards';
+import EmploymentHistoryTable, { WorkHistoryItem } from '@/components/user/EmploymentHistoryTable';
 import Link from 'next/link'
 import React, { useState } from 'react'
 
 const Page = () => {
 	const [mode, setMode] = useState<"view" | "edit">("view");
+	const isView = mode === "view";
 
 	const startEdit = () => {
 		setMode("edit");
@@ -27,11 +29,22 @@ const Page = () => {
 	const [open, setOpen] = useState(false);
 	const handleSaveClick = () => setOpen(true);
 	const handleConfirm = () => {
-	setOpen(false);
-	// TODO: call API บันทึกจริงตรงนี้
-	console.log("confirmed save");
-  };
-  const handleCancel = () => setOpen(false);
+		setOpen(false);
+		// TODO: call API บันทึกจริงตรงนี้
+		console.log("confirmed save");
+	};
+  	const handleCancel = () => setOpen(false);
+
+	const [form, setForm] = useState({
+		name: "John Doe",
+		email: "john@example.com",
+	});
+
+	const [employmentItems, setEmploymentItems] = useState<WorkHistoryItem[]>([
+		{ title: "Software Engineer / Level 3", startDate: "01/01/2025", endDate: "-" },
+		{ title: "Software Engineer / Level 2", startDate: "01/07/2024", endDate: "31/12/2024" },
+		{ title: "Software Engineer / Level 1", startDate: "01/01/2024", endDate: "30/06/2024" },
+	]);
 
 	return (
 		<>
@@ -65,13 +78,34 @@ const Page = () => {
 				<div className='grid grid-cols-1 md:grid-cols-[500px_500px]'>
 					<div className='flex flex-col gap-4'>
 						<Input
-							label="ชื่อ-สกุล"
+							label="คำนำหน้า"
+							value={form.name}
+							readOnly={isView}
+							onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+						/>
+						<Input
+							label="ชื่อ"
+							value={form.name}
+							readOnly={isView}
+							onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+						/>
+						<Input
+							label="นามสกุล"
+							value={form.name}
+							readOnly={isView}
+							onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
 						/>
 						<Input
 							label="ชื่อเล่น"
+							value={form.name}
+							readOnly={isView}
+							onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
 						/>
 						<Input
 							label="หมายแลขพนักงาน"
+							value={form.name}
+							readOnly={isView}
+							onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
 						/>
 						<Input
 							label="วัน/เดือน/ปีเกิด"
@@ -82,9 +116,15 @@ const Page = () => {
 						/>
 						<Input
 							label="อีเมล"
+							value={form.name}
+							readOnly={isView}
+							onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
 						/>
 						<Input
 							label="เบอร์ติดต่อ"
+							value={form.name}
+							readOnly={isView}
+							onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
 						/>
 						<Input
 							label="วันเริ่มต้นทำงาน"
@@ -104,40 +144,39 @@ const Page = () => {
 
 					<div className='flex flex-col gap-4'>
 						<Input
-							label="ชื่อ-สกุล"
+							label="แผนก"
+							value={form.name}
+							readOnly={isView}
+							onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
 						/>
 						<Input
-							label="ชื่อเล่น"
+							label="ตำแหน่ง"
+							value={form.name}
+							readOnly={isView}
+							onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
 						/>
 						<Input
-							label="หมายแลขพนักงาน"
+							label="ระดับ"
+							value={form.name}
+							readOnly={isView}
+							onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
 						/>
 						<Input
-							label="วัน/เดือน/ปีเกิด"
-							type="date"
-							value={birthDate}
-							onChange={(e) => setBirthDate(e.target.value)}
-							className={birthDate ? "" : "date-empty"}
+							label="รายละเอียดงาน"
+							value={form.name}
+							readOnly={isView}
+							onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
 						/>
 						<Input
-							label="อีเมล"
+							label="ผู้บังคับบัญชา"
+							value={form.name}
+							readOnly={isView}
+							onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
 						/>
-						<Input
-							label="เบอร์ติดต่อ"
-						/>
-						<Input
-							label="วันเริ่มต้นทำงาน"
-							type="date"
-							value={startDate}
-							onChange={(e) => setStartDate(e.target.value)}
-							className={startDate ? "" : "date-empty"}
-						/>
-						<Input
-							label="วันสิ้นสุดการทำงาน"
-							type="date"
-							value={endDate}
-							onChange={(e) => setEndDate(e.target.value)}
-							className={endDate ? "" : "date-empty"}
+						<EmploymentHistoryTable
+							items={employmentItems}
+							mode={mode}
+							onChangeItems={setEmploymentItems}
 						/>
 					</div>
 				</div>

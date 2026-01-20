@@ -6,16 +6,8 @@
   <component name="ChangeListManager">
     <list default="true" id="efa7c69f-6049-41ab-9563-086e6e42c610" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/admin/evaluationCycle/[id]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/admin/evaluationCycle/[id]/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/evaluationCycles/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/evaluationCycles/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/user/kpi/copyKpi/page.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/user/kpi/page.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/user/layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/user/layout.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/user/page.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/user/profile/[id]/page.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/components/EvaluateeCard.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/components/user/UserNavBar.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/prisma/schema.prisma" beforeDir="false" afterPath="$PROJECT_DIR$/prisma/schema.prisma" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(app)/[cycleId]/evaluator/defineKpi/[evaluateeId]/profile/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(app)/[cycleId]/evaluator/defineKpi/[evaluateeId]/profile/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(app)/[cycleId]/evaluator/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(app)/[cycleId]/evaluator/page.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
