@@ -1,5 +1,5 @@
 import React from "react";
-import UserNavBarForDefineKpi from "@/components/user/UserNavBarForDefineKpi";
+import UserNavBarForEvaluateKpi from "@/components/user/UserNavBarForEvaluateKpi";
 
 export default function UserLayout({
   children,
@@ -8,7 +8,7 @@ export default function UserLayout({
 }) {
   return (
     <>
-      <UserNavBarForDefineKpi />
+      <UserNavBarForEvaluateKpi />
       <main>{children}</main>
     </>
   );

@@ -37,10 +37,10 @@ function CheckBox({ checked, onChange }: { checked: boolean; onChange: (v: boole
 		`}
 		aria-pressed={checked}
 	  >
-		{checked && <FiCheck className="text-myApp-white text-xs" />}
+		{checked && <FiCheck className="text-myApp-cream text-xs" />}
 	  </button>
 	);
-  }
+}
 
 export default function TwoLevelKpiTable({ mode, showAllDetails, selectable = false, }: {
 	mode: "view" | "edit";

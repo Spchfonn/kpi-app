@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { FiHome, FiUser, FiBell, FiClock, FiX } from "react-icons/fi";
 import NotificationPanel from '../NotificationPanel';
 
-const UserNavBar = () => {
+const UserNavBarForEvaluateKpi = () => {
   const [openNoti, setOpenNoti] = useState(false);
   const notiRef = useRef<HTMLDivElement>(null);
 
@@ -46,12 +46,12 @@ const UserNavBar = () => {
   const unreadCount = notifications.filter((n) => n.unread).length;
 
   return (
-	<nav className='flex bg-myApp-blueLight space-x-10 px-6 py-4 items-center text-nav font-medium text-myApp-cream'>
+	<nav className='flex bg-myApp-pinkLight space-x-10 px-6 py-4 items-center text-nav font-medium text-myApp-cream'>
 		<ul className='flex items-center gap-10 w-full'>
 			<li><Link href="/"><FiHome className="text-xl"/></Link></li>
 
 			<li className="flex items-center gap-5">
-				ระบบกำหนดตัวชี้วัด
+				ระบบประเมินตัวชี้วัด
 				<div className="flex items-center gap-2">
 					<FiClock className="text-xl" />
 					ปีการประเมิน 2568 รอบที่ 1
@@ -125,4 +125,4 @@ const UserNavBar = () => {
   )
 }
 
-export default UserNavBar
+export default UserNavBarForEvaluateKpi
