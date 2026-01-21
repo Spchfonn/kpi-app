@@ -60,7 +60,7 @@ enum PrefixName {
 
 model EvaluationCycle {
   id        Int          @id @default(autoincrement())
-  publicId  String       @unique @default(uuid())  // เพิ่ม UUID แยก
+  publicId  String       @unique @default(uuid()) // เพิ่ม UUID แยก
   code      String       @unique
   name      String       @db.VarChar(255)
   startDate DateTime     @db.DateTime(0)
@@ -68,18 +68,18 @@ model EvaluationCycle {
   status    SystemStatus @default(DEFINE)
 
   assignments EvaluationAssignment[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
 }
 
 model Organization {
-  id        String @id @default(uuid())
-  code      String @unique
-  name      String
+  id   String @id @default(uuid())
+  code String @unique
+  name String
 
-  parentId  String?
-  parent    Organization? @relation("OrgTree", fields: [parentId], references: [id])
-  children  Organization[] @relation("OrgTree")
+  parentId String?
+  parent   Organization?  @relation("OrgTree", fields: [parentId], references: [id])
+  children Organization[] @relation("OrgTree")
 
   managerId String?
   manager   Employee? @relation("OrgManager", fields: [managerId], references: [id])
@@ -95,11 +95,11 @@ model Organization {
 }
 
 model JobTitle {
-  id        String @id @default(uuid())
-  code      String @unique
-  name      String
+  id   String @id @default(uuid())
+  code String @unique
+  name String
 
-  employees Employee[]  
+  employees Employee[]
   histories EmploymentHistory[]
 
   createdAt DateTime @default(now())
@@ -107,9 +107,9 @@ model JobTitle {
 }
 
 model Position {
-  id        String @id @default(uuid())
-  code      String @unique
-  name      String
+  id   String @id @default(uuid())
+  code String @unique
+  name String
 
   employees Employee[]
   histories EmploymentHistory[]
@@ -119,9 +119,9 @@ model Position {
 }
 
 model Level {
-  id        String @id @default(uuid())
-  code      String @unique   // เช่น L1, L2, Senior, Manager
-  name      String
+  id   String @id @default(uuid())
+  code String @unique // เช่น L1, L2, Senior, Manager
+  name String
 
   employees Employee[]
   histories EmploymentHistory[]
@@ -130,17 +130,32 @@ model Level {
   updatedAt DateTime @updatedAt
 }
 
+model User {
+  id           String  @id @default(uuid())
+  email        String  @unique
+  passwordHash String // เก็บ hash เท่านั้น ❗
+  isActive     Boolean @default(true)
+
+  // relation กับ Employee
+  employeeId String?   @unique
+  employee   Employee? @relation(fields: [employeeId], references: [id])
+
+  lastLoginAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
 model Employee {
-  id             String   @id @default(uuid())
-  prefixName     PrefixName
-  name           String
-  lastName       String
-  nickname       String
-  employeeNo     String   @unique
-  birthDate      DateTime? @db.DateTime(0)
-  gender         Gender? @default(UNSPECIFIED)
-  email          String   @unique
-  phone          String?
+  id         String     @id @default(uuid())
+  prefixName PrefixName
+  name       String
+  lastName   String
+  nickname   String
+  employeeNo String     @unique
+  birthDate  DateTime?  @db.DateTime(0)
+  gender     Gender?    @default(UNSPECIFIED)
+  email      String     @unique
+  phone      String?
 
   startDate      DateTime
   terminatedDate DateTime?
@@ -153,19 +168,21 @@ model Employee {
   jobTitleId String
   jobTitle   JobTitle @relation(fields: [jobTitleId], references: [id])
 
-  positionId     String
-  position       Position @relation(fields: [positionId], references: [id])
+  positionId String
+  position   Position @relation(fields: [positionId], references: [id])
 
-  levelId        String
-  level          Level @relation(fields: [levelId], references: [id])
+  levelId String
+  level   Level  @relation(fields: [levelId], references: [id])
 
   jobDescription String?
   isActive       Boolean @default(true)
 
+  user User?
+
   histories EmploymentHistory[]
 
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   evaluatorAssignments EvaluationAssignment[] @relation("Evaluator")
   evaluateeAssignments EvaluationAssignment[] @relation("Evaluatee")
@@ -177,7 +194,7 @@ model Employee {
 }
 
 model EmploymentHistory {
-  id         String @id @default(uuid())
+  id         String   @id @default(uuid())
   employeeId String
   employee   Employee @relation(fields: [employeeId], references: [id])
 
@@ -187,17 +204,17 @@ model EmploymentHistory {
   positionId String
   position   Position @relation(fields: [positionId], references: [id])
 
-  levelId    String
-  level      Level @relation(fields: [levelId], references: [id])
+  levelId String
+  level   Level  @relation(fields: [levelId], references: [id])
 
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
 
-  startDate DateTime     @db.DateTime(0)
-  endDate   DateTime?    @db.DateTime(0)
+  startDate DateTime  @db.DateTime(0)
+  endDate   DateTime? @db.DateTime(0)
 
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([employeeId, startDate])
   @@index([employeeId, endDate])
@@ -205,25 +222,25 @@ model EmploymentHistory {
 }
 
 model EvaluationAssignment {
-  id            String @id @default(uuid())
+  id String @id @default(uuid())
 
-  cycleId       Int
-  cycle         EvaluationCycle @relation(fields: [cycleId], references: [id])
+  cycleId Int
+  cycle   EvaluationCycle @relation(fields: [cycleId], references: [id])
 
-  evaluatorId   String
-  evaluator     Employee @relation("Evaluator", fields: [evaluatorId], references: [id])
+  evaluatorId String
+  evaluator   Employee @relation("Evaluator", fields: [evaluatorId], references: [id])
 
-  evaluateeId   String
-  evaluatee     Employee @relation("Evaluatee", fields: [evaluateeId], references: [id])
+  evaluateeId String
+  evaluatee   Employee @relation("Evaluatee", fields: [evaluateeId], references: [id])
 
-  weightPercent Decimal @db.Decimal(5,2)
+  weightPercent Decimal @db.Decimal(5, 2)
 
   plans         KpiPlan[]
-  currentPlanId String? @unique
-  currentPlan   KpiPlan? @relation("AssignmentCurrentPlan", fields: [currentPlanId], references: [id])
+  currentPlanId String?   @unique
+  currentPlan   KpiPlan?  @relation("AssignmentCurrentPlan", fields: [currentPlanId], references: [id])
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([cycleId, evaluatorId, evaluateeId])
   @@index([evaluateeId, cycleId])
@@ -231,83 +248,83 @@ model EvaluationAssignment {
 }
 
 model KpiType {
-  id        String   @id @default(uuid())
-  type      KpiTypeChoices
-  name      String
-  rubric    Json     // scoring by type
+  id     String         @id @default(uuid())
+  type   KpiTypeChoices
+  name   String
+  rubric Json // scoring by type
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  nodes     KpiNode[]
+  nodes KpiNode[]
 }
 
 model KpiPlan {
-  id            String @id @default(uuid())
+  id String @id @default(uuid())
 
-  assignmentId  String
-  assignment    EvaluationAssignment @relation(fields: [assignmentId], references: [id])
+  assignmentId        String
+  assignment          EvaluationAssignment  @relation(fields: [assignmentId], references: [id])
   currentOfAssignment EvaluationAssignment? @relation("AssignmentCurrentPlan")
 
-  version       Int
-  status        PlanStatus @default(DRAFT)
+  version Int
+  status  PlanStatus @default(DRAFT)
 
-  nodes         KpiNode[]
+  nodes KpiNode[]
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([assignmentId, version])
   @@index([assignmentId, status])
 }
 
 model KpiNode {
-  id            String @id @default(uuid())
-  planId        String
-  plan          KpiPlan @relation(fields: [planId], references: [id])
+  id     String  @id @default(uuid())
+  planId String
+  plan   KpiPlan @relation(fields: [planId], references: [id])
 
-  nodeType      KpiNodeType
-  title         String
-  description   String?
+  nodeType    KpiNodeType
+  title       String
+  description String?
 
-  parentId      String?
-  parent        KpiNode? @relation("NodeParent", fields: [parentId], references: [id])
-  children      KpiNode[] @relation("NodeParent")
+  parentId String?
+  parent   KpiNode?  @relation("NodeParent", fields: [parentId], references: [id])
+  children KpiNode[] @relation("NodeParent")
 
-  weightPercent Decimal @db.Decimal(5,2)
+  weightPercent Decimal @db.Decimal(5, 2)
 
   // เฉพาะ ITEM
-  typeId        String?
-  type          KpiType? @relation(fields: [typeId], references: [id])
-  unit          String?
-  startDate     DateTime? @db.DateTime(0)
-  endDate       DateTime? @db.DateTime(0)
+  typeId    String?
+  type      KpiType?  @relation(fields: [typeId], references: [id])
+  unit      String?
+  startDate DateTime? @db.DateTime(0)
+  endDate   DateTime? @db.DateTime(0)
 
   submissions KpiSubmission[] @relation("NodeSubmissions")
 
-  currentSubmissionId String? @unique
+  currentSubmissionId String?        @unique
   currentSubmission   KpiSubmission? @relation("NodeCurrentSubmission", fields: [currentSubmissionId], references: [id])
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([planId])
   @@index([parentId])
 }
 
 model KpiSubmission {
-  id        String @id @default(uuid())
-  nodeId    String
+  id     String  @id @default(uuid())
+  nodeId String
   node   KpiNode @relation("NodeSubmissions", fields: [nodeId], references: [id])
 
   // back relation ของ currentSubmission (optional)
   currentOfNode KpiNode? @relation("NodeCurrentSubmission")
 
-  version   Int
-  payload   Json
+  version         Int
+  payload         Json
   calculatedScore Int?
   finalScore      Int?
-  note      String?
+  note            String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
