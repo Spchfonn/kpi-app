@@ -6,8 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="efa7c69f-6049-41ab-9563-086e6e42c610" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/(app)/[cycleId]/evaluator/defineKpi/[evaluateeId]/profile/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(app)/[cycleId]/evaluator/defineKpi/[evaluateeId]/profile/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/(app)/[cycleId]/evaluator/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(app)/[cycleId]/evaluator/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/prisma/schema.prisma" beforeDir="false" afterPath="$PROJECT_DIR$/prisma/schema.prisma" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -30,7 +29,7 @@
     &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;frontend&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;backend/masterDataApi&quot;,
     &quot;last_opened_file_path&quot;: &quot;/Users/fonspch&quot;
   },
   &quot;keyToStringList&quot;: {
