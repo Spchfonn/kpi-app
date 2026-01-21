@@ -7,9 +7,24 @@ const schema = z.object({
 	status: z.enum(["DRAFT", "ACTIVE"]).optional(),
 });
 
-export async function POST(req: Request, ctx: { params: { assignmentId: string } }) {
+export async function POST(req: Request, ctx: { params: Promise<{ assignmentId: string }> }) {
 	try {
-		const assignmentId = ctx.params.assignmentId;
+
+		const { assignmentId } = await ctx.params;
+
+		// console.log("DEBUG url", req.url);
+		// console.log("DEBUG params", ctx.params);
+		// console.log("DEBUG assignmentId", assignmentId);
+
+		// console.log("DEBUG params keys:", Object.keys(ctx.params ?? {}));
+		// console.log("DEBUG params:", ctx.params);
+
+		if (!assignmentId) {
+		return NextResponse.json(
+			{ ok: false, message: "assignmentId missing from route params", debugUrl: req.url },
+			{ status: 400 }
+		);
+		}
 
 		const body = await req.json().catch(() => ({}));
 		const v = schema.safeParse(body);
@@ -53,7 +68,7 @@ export async function POST(req: Request, ctx: { params: { assignmentId: string }
 
 		return NextResponse.json({ ok: true, data: created }, { status: 201 });
 	} catch (err: any) {
-		console.error("POST /api/assignments/[assignmentId]/plans error:", err);
+		console.error("POST /api/evaluationAssignments/[assignmentId]/plans error:", err);
 		return NextResponse.json({ ok: false, message: err?.message ?? "Internal Server Error" }, { status: 500 });
 	}
 }

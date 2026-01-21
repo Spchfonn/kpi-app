@@ -265,10 +265,10 @@ function buildTreeWithDisplayNo(flatNodes: any[]) {
 // -----------------------------
 export async function PUT(
 	request: Request,
-	ctx: { params: { planId: string } }
+	ctx: { params: Promise<{ planId: string }> }
 	) {
 	try {
-		const planId = ctx.params.planId;
+		const { planId } = await ctx.params;
 
 		const body = await request.json();
 		const parsed = PutTreeSchema.safeParse(body);

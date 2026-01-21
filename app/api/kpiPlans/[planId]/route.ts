@@ -48,10 +48,10 @@ function buildTreeWithDisplayNo(flatNodes: any[]) {
 
 export async function GET(
 	_request: Request,
-	ctx: { params: { planId: string } }
+	ctx: { params: Promise<{ planId: string }> }
 	) {
 	try {
-		const planId = ctx.params.planId;
+		const { planId } = await ctx.params;
 
 		const plan = await prisma.kpiPlan.findUnique({
 			where: { id: planId },
