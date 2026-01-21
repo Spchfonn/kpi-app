@@ -287,9 +287,11 @@ model KpiNode {
   title       String
   description String?
 
-  parentId String?
-  parent   KpiNode?  @relation("NodeParent", fields: [parentId], references: [id])
-  children KpiNode[] @relation("NodeParent")
+  parentId      String?
+  parent        KpiNode? @relation("NodeParent", fields: [parentId], references: [id])
+  children      KpiNode[] @relation("NodeParent")
+
+  sortOrder Int @default(0)
 
   weightPercent Decimal @db.Decimal(5, 2)
 
@@ -310,6 +312,7 @@ model KpiNode {
 
   @@index([planId])
   @@index([parentId])
+  @@index([planId, parentId, sortOrder])
 }
 
 model KpiSubmission {
