@@ -6,9 +6,10 @@
   <component name="ChangeListManager">
     <list default="true" id="efa7c69f-6049-41ab-9563-086e6e42c610" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/evaluationAssignments/[assignmentId]/plans/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/evaluationAssignments/[assignmentId]/plans/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/kpiPlans/[planId]/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/kpiPlans/[planId]/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/kpiPlans/[planId]/tree/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/kpiPlans/[planId]/tree/route.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/admin/evaluationCycle/[id]/_tabs/EmployeeStatusTab.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/admin/evaluationCycle/[id]/_tabs/EmployeeStatusTab.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/admin/evaluationCycle/[id]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/admin/evaluationCycle/[id]/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/api/evaluationCycles/[id]/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/evaluationCycles/[id]/route.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/admin/EvaluationPairsTable.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/admin/EvaluationPairsTable.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -31,7 +32,7 @@
     "ModuleVcsDetector.initialDetectionPerformed": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "backend/kpiApi",
+    "git-widget-placeholder": "backend/adminApi",
     "last_opened_file_path": "/Users/fonspch"
   },
   "keyToStringList": {

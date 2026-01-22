@@ -2,12 +2,21 @@
 import React from "react";
 import { FiUser } from "react-icons/fi";
 
+export type BasicInfoObj = {
+	id: string;
+	code: string;
+	name: string;
+	createdAt: string;
+	updatedAt: string;
+};
+
 export type PersonRow = {
 	id: string;
 	employeeNo: string;
 	name: string;
-	position: string;
-	level: string;
+	lastName: string;
+	position: BasicInfoObj | string;
+	level: BasicInfoObj | string;
 };
 
 export type EvaluationGroup = {
@@ -21,6 +30,7 @@ type Props = {
   
 	selectedIndex?: number;
 	onSelectGroup?: (index: number, group: EvaluationGroup) => void;
+	groupBy?: "evaluator" | "evaluatee";
 };
 
 function Avatar() {
@@ -31,6 +41,10 @@ function Avatar() {
   );
 }
 
+function getLabel(v: string | BasicInfoObj) {
+	return typeof v === "string" ? v : v?.name ?? "";
+}
+
 function Row({ p }: { p: PersonRow }) {
   return (
 	<div className="grid grid-cols-[90px_1.3fr_1fr_74px] items-center gap-2">
@@ -38,9 +52,9 @@ function Row({ p }: { p: PersonRow }) {
 			<Avatar />
 			<div className="text-myApp-blueDark font-medium">{p.employeeNo}</div>
 		</div>
-		<div className="text-myApp-blueDark font-medium">{p.name}</div>
-		<div className="text-myApp-blueDark font-medium">{p.position}</div>
-		<div className="text-myApp-blueDark font-medium">{p.level}</div>
+		<div className="text-myApp-blueDark font-medium">{p.name} {p.lastName}</div>
+		<div className="text-myApp-blueDark font-medium">{getLabel(p.position)}</div>
+		<div className="text-myApp-blueDark font-medium">{getLabel(p.level)}</div>
 	</div>
   );
 }
@@ -61,6 +75,7 @@ export default function EvaluationPairsTable({
 	className = "",
 	selectedIndex,
 	onSelectGroup,
+	groupBy = "evaluator",
   }: Props) {
 	
   return (
@@ -69,7 +84,7 @@ export default function EvaluationPairsTable({
 		<div className="rounded-3xl bg-myApp-blue px-6 py-3 shrink-0">
 			<div className="grid grid-cols-2 gap-6 relative">
 				<div className="text-center text-myApp-cream font-semibold text-body-changed">
-					ผู้ประเมิน
+					{ groupBy === "evaluator" ? "ผู้ประเมิน" : "ผู้รับการประเมิน" }
 					<div className="mt-3 pt-2">
 						<div className="absolute -left-2 top-1/2 w-[50%] h-0.75 bg-myApp-blueLight rounded-full" />
 						<HeaderCols />
@@ -80,7 +95,7 @@ export default function EvaluationPairsTable({
 				<div className="absolute left-1/2 top-0 h-full w-0.75 bg-myApp-blueLight rounded-full" />
 
 				<div className="text-center text-myApp-cream font-semibold text-body-changed">
-					ผู้รับการประเมิน
+					{ groupBy === "evaluator" ? "ผู้รับการประเมิน" : "ผู้ประเมิน" }
 					<div className="mt-3 pt-2">
 						<div className="absolute top-1/2 w-[50%] h-0.75 bg-myApp-blueLight rounded-full" />
 						<HeaderCols />
