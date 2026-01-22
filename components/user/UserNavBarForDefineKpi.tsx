@@ -4,9 +4,40 @@ import Link from 'next/link'
 import { FiHome, FiUser, FiBell, FiClock, FiX } from "react-icons/fi";
 import NotificationPanel from '../NotificationPanel';
 
+type LoginUser = {
+  fullName?: string;
+  cycle?: {
+    id: number;
+    name: string;
+  };
+};
+
+const ROLE_LABEL: Record<string, string> = {
+  evaluator: "ผู้ประเมิน",
+  evaluatee: "ผู้รับการประเมิน",
+};
+
 const UserNavBarForDefineKpi = () => {
   const [openNoti, setOpenNoti] = useState(false);
   const notiRef = useRef<HTMLDivElement>(null);
+
+  const [cycleName, setCycleName] = useState<string>("");
+  const [roleLabel, setRoleLabel] = useState<string>("");
+  const [fullName, setFullName] = useState<string>("");
+
+  useEffect(() => {
+    const rawUser = localStorage.getItem("user");
+    if (rawUser) {
+      const user: LoginUser = JSON.parse(rawUser);
+      setCycleName(user.cycle?.name ?? "");
+      setFullName(user.fullName ?? "");
+    }
+
+    const selectedRole = localStorage.getItem("selectedRole");
+    if (selectedRole) {
+      setRoleLabel(ROLE_LABEL[selectedRole] ?? "");
+    }
+  }, []);
 
   // ปิดเมื่อคลิกนอกกล่อง
   useEffect(() => {
@@ -52,14 +83,19 @@ const UserNavBarForDefineKpi = () => {
 
 			<li className="flex items-center gap-5">
 				ระบบกำหนดตัวชี้วัด
-				<div className="flex items-center gap-2">
+				{cycleName && (
+					<div className="flex items-center gap-2">
 					<FiClock className="text-xl" />
-					ปีการประเมิน 2568 รอบที่ 1
-				</div>
-				<div className="flex items-center gap-2">
+					{cycleName}
+					</div>
+				)}
+
+				{roleLabel && (
+					<div className="flex items-center gap-2">
 					<FiUser className="text-xl" />
-					ผู้ประเมิน
-				</div>
+					{roleLabel}
+					</div>
+				)}
 			</li>
 
 			<li className="ml-auto flex items-center gap-5">
@@ -117,12 +153,12 @@ const UserNavBarForDefineKpi = () => {
 
 			<div className="flex items-center gap-2">
 				<FiUser className="text-xl" />
-				นายสวัสดี สวีดัส
+				{fullName || "-"}
 			</div>
 		</li>
 		</ul>
 	</nav>
-  )
-}
+  );
+};
 
 export default UserNavBarForDefineKpi

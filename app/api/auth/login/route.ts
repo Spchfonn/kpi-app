@@ -55,11 +55,15 @@ export async function POST(req: Request) {
     if (a.evaluateeId === user.employeeId) roles.add("EVALUATEE");
   });
 
+  const fullName = user.employee
+  ? `${user.employee.name} ${user.employee.lastName}`
+  : "";
+
   return Response.json({
     userId: user.id,
-    employeeId: user.employeeId,
+    employeeId: user.employeeId,fullName,
     cycle: {
-      id: cycle.publicId,
+      id: cycle.id,
       name: cycle.name,
     },
     availableRoles: Array.from(roles),
