@@ -1,0 +1,49 @@
+"use client";
+import Input from "@/components/InputField";
+import type { EvalCycleForm } from "../types";
+import SystemStatusCards from "@/components/SystemStatusCards";
+
+type Props = {
+	draft: EvalCycleForm;
+	setDraft: (next: EvalCycleForm) => void;
+	mode: "view" | "edit";
+};
+
+export default function BasicTab({ draft, setDraft, mode }: Props) {
+	const disabled = mode === "view";
+
+	return (
+		<div className="flex flex-col gap-4">
+			<Input
+				label="ชื่อรอบการประเมิน"
+				value={draft.name}
+				onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+				disabled={disabled}
+			/>
+
+			<Input
+				label="วันเริ่มต้น"
+				type="date"
+				value={draft.startDate}
+				onChange={(e) => setDraft({ ...draft, startDate: e.target.value })}
+				className={draft.startDate ? "" : "date-empty"}
+				disabled={disabled}
+			/>
+
+			<Input
+				label="วันสิ้นสุด"
+				type="date"
+				value={draft.endDate}
+				onChange={(e) => setDraft({ ...draft, endDate: e.target.value })}
+				className={draft.endDate ? "" : "date-empty"}
+				disabled={disabled}
+			/>
+
+			<SystemStatusCards
+				active={draft.systemStatus}
+				onChange={(k) => setDraft({ ...draft, systemStatus: k })}
+				disabled={mode === "view"}
+			/>
+		</div>
+	);
+}
