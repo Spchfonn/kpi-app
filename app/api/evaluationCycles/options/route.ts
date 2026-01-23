@@ -3,12 +3,12 @@ import { prisma } from "@/prisma/client";
 
 export async function GET() {
   const cycles = await prisma.evaluationCycle.findMany({
-    select: { id: true, name: true },
-    orderBy: { id: "desc" },
+    select: { publicId: true, name: true },
+    orderBy: { publicId: "desc" },
   });
 
   const options = cycles.map((c) => ({
-    value: String(c.id),
+    value: String(c.publicId),
     label: c.name,
   }));
 
