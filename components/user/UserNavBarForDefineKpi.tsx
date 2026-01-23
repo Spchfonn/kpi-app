@@ -6,16 +6,48 @@ import NotificationPanel from '../NotificationPanel';
 import { useRouter } from "next/navigation";
 import ConfirmBox from '../ConfirmBox';
 
+type LoginUser = {
+  fullName?: string;
+  cycle?: {
+    id: number;
+    name: string;
+  };
+};
+
+const ROLE_LABEL: Record<string, string> = {
+  evaluator: "ผู้ประเมิน",
+  evaluatee: "ผู้รับการประเมิน",
+};
+
 const UserNavBarForDefineKpi = () => {
 	const router = useRouter();
 	const [openNoti, setOpenNoti] = useState(false);
 	const notiRef = useRef<HTMLDivElement>(null);
 
+	const [cycleName, setCycleName] = useState<string>("");
+	const [roleLabel, setRoleLabel] = useState<string>("");
+  	const [fullName, setFullName] = useState<string>("");
+	
 	const [openUserMenu, setOpenUserMenu] = useState(false);
 	const userMenuRef = useRef<HTMLDivElement>(null);
 
 	const [openSignOut, setOpenSignOut] = useState(false);
 	const signOutRef = useRef<HTMLDivElement>(null);
+
+	// load data from localStorage
+	useEffect(() => {
+    const rawUser = localStorage.getItem("user");
+		if (rawUser) {
+			const user: LoginUser = JSON.parse(rawUser);
+			setCycleName(user.cycle?.name ?? "");
+			setFullName(user.fullName ?? "");
+		}
+
+		const selectedRole = localStorage.getItem("selectedRole");
+		if (selectedRole) {
+			setRoleLabel(ROLE_LABEL[selectedRole] ?? "");
+		}
+	}, []);
 
 	// close if dlick outside modal
 	useEffect(() => {
@@ -82,14 +114,19 @@ const UserNavBarForDefineKpi = () => {
 
 				<li className="flex items-center gap-5">
 					ระบบกำหนดตัวชี้วัด
-					<div className="flex items-center gap-2">
+					{cycleName && (
+						<div className="flex items-center gap-2">
 						<FiClock className="text-xl" />
-						ปีการประเมิน 2568 รอบที่ 1
-					</div>
-					<div className="flex items-center gap-2">
+						{cycleName}
+						</div>
+					)}
+
+					{roleLabel && (
+						<div className="flex items-center gap-2">
 						<FiUser className="text-xl" />
-						ผู้ประเมิน
-					</div>
+						{roleLabel}
+						</div>
+					)}
 				</li>
 
 				<li className="ml-auto flex items-center gap-5">
@@ -158,7 +195,7 @@ const UserNavBarForDefineKpi = () => {
 					aria-expanded={openUserMenu}
 					>
 					<FiUser className="text-xl" />
-					นายสวัสดี สวีดัส
+					{fullName || "-"}
 					</button>
 
 					{openUserMenu && (
@@ -192,8 +229,8 @@ const UserNavBarForDefineKpi = () => {
 											<FiUser className="text-myApp-blueDark text-lg" />
 										</div>
 										<div className="min-w-0">
-											<div className="text-nav text-myApp-blueDark font-semibold truncate">นายสวัสดี สวีดัส</div>
-											<div className="text-body text-myApp-blueDark">บทบาท: ผู้ประเมิน</div>
+											<div className="text-nav text-myApp-blueDark font-semibold truncate">{fullName || "-"}</div>
+											<div className="text-body text-myApp-blueDark">บทบาท: {roleLabel}</div>
 										</div>
 									</div>
 
