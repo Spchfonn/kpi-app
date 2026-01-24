@@ -5,12 +5,30 @@ import { FiHome, FiUser, FiBell, FiClock, FiX, FiRepeat, FiKey, FiLogOut } from 
 import NotificationPanel from '../NotificationPanel';
 import { useRouter } from "next/navigation";
 import ConfirmBox from '../ConfirmBox';
+import { formatTimeLabel } from "@/lib/time";
+import type { Notification } from "../NotificationPanel";
+import { NOTIFICATION_UI } from "@/lib/notificationText";
+import type { NotificationType } from "@prisma/client";
+
 
 type LoginUser = {
   fullName?: string;
   cycle?: {
     id: number;
     name: string;
+  };
+};
+
+type ApiNotification = {
+  id: string;
+  type: NotificationType;
+  createdAt: string;
+  unread: boolean;
+  notification?: {
+    actor?: {
+      name?: string;
+      lastName?: string;
+    };
   };
 };
 
@@ -21,7 +39,10 @@ const ROLE_LABEL: Record<string, string> = {
 
 const UserNavBarForDefineKpi = () => {
 	const router = useRouter();
+
 	const [openNoti, setOpenNoti] = useState(false);
+	const [notifications, setNotifications] = useState<Notification[]>([]);
+  	const unreadCount = notifications.filter((n) => n.unread).length;
 	const notiRef = useRef<HTMLDivElement>(null);
 
 	const [cycleName, setCycleName] = useState<string>("");
@@ -68,6 +89,37 @@ const UserNavBarForDefineKpi = () => {
 		return () => document.removeEventListener("mousedown", onDown);
 	}, [openNoti, openUserMenu, openSignOut]);
 
+	useEffect(() => {
+		if (!openNoti) return;
+
+		const loadNotifications = async () => {
+			const res = await fetch("/api/notifications");
+			if (!res.ok) return;
+
+			const data: ApiNotification[] = await res.json();
+
+			setNotifications(
+				data.map((n) => {
+					const config = NOTIFICATION_UI[n.type]; // ✅ n.type = NotificationType
+
+					const actorName = n.notification?.actor
+						? `${n.notification.actor.name ?? ""} ${n.notification.actor.lastName ?? ""}`.trim()
+						: undefined;
+
+					return {
+						id: n.id,
+						type: config.uiType,
+						title: config.title(actorName, cycleName),
+						unread: n.unread,
+						timeLabel: formatTimeLabel(n.createdAt),
+					} satisfies Notification;
+				})
+			);
+		};
+
+		loadNotifications();
+	}, [openNoti]);
+
 	const handleChangeRole = () => {
 		setOpenUserMenu(false);
 		router.push("/sign-in/selectRole")
@@ -91,21 +143,17 @@ const UserNavBarForDefineKpi = () => {
 		// TODO: call api sign out
 	};
 
-	// mock notifications
-	const notifications = [
-		{ id: "n1", type: "pending", title: "นางสาวรักงาน สู้ชีวิต ขออนุมัติตัวชี้วัด ปี 2568 รอบ 1", timeLabel: "1 hour ago", unread: true },
-		{ id: "n2", type: "success", title: "นายสวัสดี ดีใจ รับรองตัวชี้วัด ปี 2568 รอบ 1 แล้ว", timeLabel: "2 hours ago", unread: true },
-		{ id: "n3", type: "error", title: "นายสวัสดี ดีใจ ปฏิเสธการรับรองตัวชี้วัด ปี 2568 รอบ 1", timeLabel: "2 hours ago", unread: false },
-		{ id: "n4", type: "error", title: "นายสวัสดี ดีใจ ปฏิเสธการรับรองตัวชี้วัด ปี 2568 รอบ 1", timeLabel: "2 hours ago", unread: false },
-		{ id: "n5", type: "error", title: "นายสวัสดี ดีใจ ปฏิเสธการรับรองตัวชี้วัด ปี 2568 รอบ 1", timeLabel: "2 hours ago", unread: false },
-		{ id: "n6", type: "error", title: "นายสวัสดี ดีใจ ปฏิเสธการรับรองตัวชี้วัด ปี 2568 รอบ 1", timeLabel: "2 hours ago", unread: false },
-		{ id: "n7", type: "error", title: "นายสวัสดี ดีใจ ปฏิเสธการรับรองตัวชี้วัด ปี 2568 รอบ 1", timeLabel: "2 hours ago", unread: false },
-		{ id: "n8", type: "error", title: "นายสวัสดี ดีใจ ปฏิเสธการรับรองตัวชี้วัด ปี 2568 รอบ 1", timeLabel: "2 hours ago", unread: false },
-		{ id: "n9", type: "error", title: "นายสวัสดี ดีใจ ปฏิเสธการรับรองตัวชี้วัด ปี 2568 รอบ 1", timeLabel: "2 hours ago", unread: false },
-		{ id: "n10", type: "error", title: "นายสวัสดี ดีใจ ปฏิเสธการรับรองตัวชี้วัด ปี 2568 รอบ 1", timeLabel: "2 hours ago", unread: false },
-	] as const;
+	const markAsRead = async (id: string) => {
+		await fetch(`/api/notifications/${id}/read`, {
+			method: "PATCH",
+		});
 
-	const unreadCount = notifications.filter((n) => n.unread).length;
+		setNotifications((prev) =>
+			prev.map((n) =>
+			n.id === id ? { ...n, unread: false } : n
+			)
+		);
+	};
 
 	return (
 		<nav className='flex bg-myApp-blueLight space-x-10 px-6 py-4 items-center text-nav font-medium text-myApp-cream'>
@@ -136,7 +184,6 @@ const UserNavBarForDefineKpi = () => {
 					type="button"
 					onClick={() => setOpenNoti((p) => !p)}
 					className="relative"
-					aria-label="Notifications"
 					>
 						<FiBell className="text-xl" />
 						{unreadCount > 0 && (
@@ -151,10 +198,8 @@ const UserNavBarForDefineKpi = () => {
 
 						{/* overlay */}
 						<button
-							type="button"
 							className="absolute inset-0 bg-myApp-black/30"
-							onClick={() => setOpenNoti(false)}
-							aria-label="Close modal"
+                  	onClick={() => setOpenNoti(false)}
 						/>
 
 						<div className="absolute right-0 top-0 w-124 max-w-[100vw] h-dvh">
@@ -172,7 +217,10 @@ const UserNavBarForDefineKpi = () => {
 								</div>
 
 								<div className='flex-1 overflow-y-auto'>
-									<NotificationPanel notifications={notifications as any} />
+									<NotificationPanel
+										notifications={notifications}
+										onClickItem={(id: string) => markAsRead(id)}
+										/>
 								</div>
 
 								<div className='h-14'></div>

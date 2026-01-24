@@ -21,9 +21,12 @@ const TYPE_STYLE: Record<NotiType, { bar: string; icon: React.ReactNode }> = {
 
 export default function NotificationPanel({
   notifications,
+  onClickItem,
 }: {
   notifications: Notification[];
+  onClickItem: (id: string) => void;
 }) {
+	
   const [filter, setFilter] = useState<"all" | "unread">("all");
 
   const list = useMemo(() => {
@@ -63,22 +66,34 @@ export default function NotificationPanel({
 	  {/* list */}
 	  <div className="space-y-3">
 		{list.map((n) => (
-		  <NotificationItem key={n.id} item={n} />
+		<NotificationItem
+			key={n.id}
+			item={n}
+			onClick={() => onClickItem(n.id)}
+		/>
 		))}
 	  </div>
 	</aside>
   );
 }
 
-function NotificationItem({ item }: { item: Notification }) {
+function NotificationItem({
+  item,
+  onClick,
+}: {
+  item: Notification;
+  onClick: () => void;
+}) {
   const style = TYPE_STYLE[item.type];
 
   return (
-	<div
-	  className={`
-		relative rounded-xl shadow-sm overflow-hidden
-		${item.unread ? "bg-myApp-white" : "bg-myApp-shadow/50"}
-	  `}
+	<button
+		type="button"
+		onClick={onClick}
+		className={`
+			w-full text-left relative rounded-xl shadow-sm overflow-hidden
+			${item.unread ? "bg-myApp-white" : "bg-myApp-shadow/50"}
+		`}
 	>
 		{/* left color bar */}
 		<div className={`absolute left-0 top-0 h-full w-13 ${style.bar}`} />
@@ -100,6 +115,6 @@ function NotificationItem({ item }: { item: Notification }) {
 				</div>
 			</div>
 		</div>
-	</div>
+	</button>
   );
 }

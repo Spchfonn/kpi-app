@@ -1,6 +1,7 @@
 // app/api/auth/login/route.ts
 import bcrypt from "bcrypt";
 import { prisma } from "@/prisma/client";
+import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   const { cyclePublicId, email, password } = await req.json();
@@ -59,13 +60,21 @@ export async function POST(req: Request) {
   ? `${user.employee.name} ${user.employee.lastName}`
   : "";
 
-  return Response.json({
+  const res = NextResponse.json({
     userId: user.id,
-    employeeId: user.employeeId,fullName,
+    employeeId: user.employeeId,
+    fullName,
     cycle: {
       id: cycle.id,
       name: cycle.name,
     },
     availableRoles: Array.from(roles),
   });
+
+  res.cookies.set("userId", user.id, {
+    httpOnly: true,
+    sameSite: "lax",
+  });
+
+  return res;
 }
