@@ -1,7 +1,7 @@
 "use client";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { FiChevronDown, FiChevronRight } from "react-icons/fi";
-import KpiDetailsBar, { type KpiType } from "./KpiDetailsBar";
+import KpiDetailsBar, { type KpiTypeChoice } from "./KpiDetailsBar";
 import ScoreBoxForQuantitativeKpi from "./ScoreBoxForQuantitativeKpi";
 import KpiScoreInput from "./user/KpiScoreInput";
 
@@ -15,7 +15,7 @@ type ChildRow = {
 	name: string;
 	weight: number;
 	relation: string;
-	kpiType: KpiType;
+	kpiTypes: KpiTypeChoice;
 	score: number | "";
 
 	// qualitative
@@ -32,97 +32,77 @@ type ParentRow = {
 	expanded: boolean;
 };
 
-export default function TwoLevelKpiTableForEvaluateKpi({ mode, showAllDetails }: {
+export type KpiTreeNode = {
+	id?: string;
+	clientId?: string;
+	nodeType: "GROUP" | "ITEM";
+	title: string;
+	weightPercent: number;
+  
+	typeId?: string | null;
+	unit?: string | null;
+	startDate?: string | null;
+	endDate?: string | null;
+  
+	children: KpiTreeNode[];
+	displayNo?: string;
+};
+
+const nodeKey = (n: KpiTreeNode) => n.id ?? n.clientId!;
+
+export type EvalScoreState = {
+	score: number | "";
+	checkedIds?: string[];
+};
+  
+type Props = {
 	mode: "view" | "edit";
 	showAllDetails: boolean;
-  }) {
+  
+	tree: KpiTreeNode[];
+	kpiTypes: { id: string; type: "QUANTITATIVE"|"QUALITATIVE"|"CUSTOM"; name: string; rubric?: any }[];
+  
+	scores: Record<string, EvalScoreState>; // key = nodeKey(item)
+	onChangeScores: React.Dispatch<React.SetStateAction<Record<string, EvalScoreState>>>;
+};
 
-	const [rows, setRows] = useState<ParentRow[]>([
-		{
-		id: "p1",
-		name: "1. การบริหารจัดการเพื่อสร้างคุณค่าเชิงเศรษฐศาสตร์ (EVM)",
-		weight: 60,
-		relation: "xx",
-		expanded: true,
-		children: [
-			{ 	id: "c1",
-				name: "1.1 วันที่ส่งรายงานเหตุผลประกอบการเบิกจ่าย",
-				weight: 50,
-				kpiType: "quantitative",
-				score: "",
-				relation: "xx" },
-			{ 	id: "c2",
-				name: "1.2 ร้อยละของการลดค่าใช้จ่ายที่ควบคุมได้เทียบกับงบประมาณ",
-				weight: 50,
-				kpiType: "quantitative",
-				score: "",
-				relation: "xx" },
-		],
-		},
-		{
-		id: "p2",
-		name: "2. ความสามารถในการบริหารแผนลงทุน",
-		weight: 40,
-		relation: "xx",
-		expanded: true,
-		children: [
-			{ 	id: "c3",
-				name: "2.1 ปรับปรุงแผนการลงทุนให้สอดคล้องกับงบประมาณ",
-				weight: 60,
-				kpiType: "qualitative",
-				score: "",
-				criteria: [
-					{ id: "crit-1", weight: 10 },
-					{ id: "crit-2", weight: 20 },
-					{ id: "crit-3", weight: 30 },
-					{ id: "crit-4", weight: 40 },
-				],
-				checkedIds: [],
-				relation: "xx" },
-			{ 	id: "c4",
-				name: "2.2 ค่าเฉลี่ยของร้อยละการเบิกจ่ายของลงทุน",
-				weight: 40,
-				kpiType: "quantitative",
-				score: "",
-				relation: "xx" },
-		],
-		},
-	]);
+function toLegacyKpiType(t?: "QUANTITATIVE"|"QUALITATIVE"|"CUSTOM" | null) {
+	if (t === "QUANTITATIVE") return "quantitative";
+	if (t === "QUALITATIVE") return "qualitative";
+	if (t === "CUSTOM") return "custom";
+	return null;
+}
+
+export default function TwoLevelKpiTableForEvaluateKpi({
+	mode,
+	showAllDetails,
+	tree,
+	kpiTypes,
+	scores,
+	onChangeScores
+  }: Props) {
 
 	const colClass = "grid grid-cols-[1fr_100px_100px_110px] items-center"
 
-	const toggleExpand = (parentId: string) => {
-		setRows(prev =>
-		prev.map(p => (p.id === parentId ? { ...p, expanded: !p.expanded } : p))
-		);
+	const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+	const isExpanded = (key: string) => expanded[key] ?? true;
+
+	const typeById = useMemo(() => {
+		const m = new Map<string, (typeof kpiTypes)[number]>();
+		kpiTypes.forEach((t) => m.set(t.id, t));
+		return m;
+	}, [kpiTypes]);
+
+	const toggleExpand = (parentKey: string) => {
+		setExpanded((prev) => ({ ...prev, [parentKey]: !isExpanded(parentKey) }));
 	};
 
-	const updateChild = (parentId: string, childId: string, patch: Partial<ChildRow>) => {
-		setRows(prev =>
-		prev.map(p =>
-			p.id === parentId
-			? {
-				...p,
-				children: p.children.map(c => (c.id === childId ? { ...c, ...patch } : c)),
-				}
-			: p
-		)
-		);
+	const setItemScore = (itemKey: string, patch: Partial<EvalScoreState>) => {
+		onChangeScores((prev) => ({
+			...prev,
+			[itemKey]: { scores: "", ...(prev[itemKey] ?? {}), ...patch },
+		}));
 	};
-
-	// set default for details of kpi
-	const [kpiType, setKpiType] = useState<KpiType | null>(null);
-	const [unit, setUnit] = useState("");
-	const [startDate, setStartDate] = useState("");
-	const [endDate, setEndDate] = useState("");
-
-	const [values, setValues] = useState<Record<1|2|3|4|5, number | "">>({
-		1: "",
-		2: "",
-		3: "",
-		4: "",
-		5: "",
-	});
 
   return (
 	<div className="w-full">
@@ -140,94 +120,108 @@ export default function TwoLevelKpiTableForEvaluateKpi({ mode, showAllDetails }:
 
 		{/* rows */}
 		<div className="mt-2 space-y-2 text-body-changed font-medium">
-			{rows.map((p) => (
-			<div key={p.id}>
-				{/* parent row */}
-				<div className="bg-myApp-white rounded-xl shadow-sm px-4 py-3">
-				<div className={`${colClass}`}>
-					<div className="flex items-center gap-1 text-myApp-blueDark">
+			{tree.map((p) => {
+				const pKey = nodeKey(p);
+				return (
+					<div key={pKey}>
+						{/* parent row */}
+						<div className="bg-myApp-white rounded-xl shadow-sm px-4 py-3">
+							<div className={`${colClass}`}>
+								<div className="flex items-center gap-1 text-myApp-blueDark">
 
-						<button
-							type="button"
-							onClick={() => toggleExpand(p.id)}
-							className="p-1 rounded-xl hover:bg-myApp-shadow/40 transition"
-							title="ขยาย/ย่อ"
-						>
-							{p.expanded ? <FiChevronDown /> : <FiChevronRight />}
-						</button>
+									<button
+										type="button"
+										onClick={() => toggleExpand(pKey)}
+										className="p-1 rounded-xl hover:bg-myApp-shadow/40 transition"
+										title="ขยาย/ย่อ"
+									>
+										{isExpanded(pKey) ? <FiChevronDown /> : <FiChevronRight />}
+									</button>
 
-						<span className="text-body font-medium">{p.name}</span>
-					</div>
+									<span className="text-body font-medium">
+										{(p.displayNo ? `${p.displayNo}. ` : "") + p.title}
+									</span>
+								</div>
 
-					<div className="flex items-center justify-center text-myApp-blueDark">
-						<span className="text-body font-medium">{p.weight}%</span>
-					</div>
+								<div className="flex items-center justify-center text-myApp-blueDark">
+									<span className="text-body font-medium">{p.weightPercent}%</span>
+								</div>
 
-					<div></div>
+								<div></div>
 
-					<div className="flex items-center justify-center text-myApp-blueDark">
-						<span>{p.relation}</span>
-					</div>
-				</div>
-				</div>
-
-				{/* children */}
-				{p.expanded && (
-				<div className="mt-2 space-y-2">
-					{p.children.map((c) => (
-					<div key={c.id} className="bg-myApp-white rounded-xl shadow-sm px-4 py-3 ml-10">
-						<div className={`${colClass}`}>
-							<div className="text-myApp-blueDark flex gap-2">
-								<span className="font-medium">{c.name}</span>
-							</div>
-
-							<div className="flex items-center justify-center text-myApp-blueLight">
-								<span className="font-semibold">{c.weight}%</span>
-							</div>
-
-							<div className="flex items-center justify-center text-myApp-blueDark">
-								{mode === "edit" ? (
-								<KpiScoreInput
-									mode={mode}
-									kpiType={c.kpiType}
-									score={c.score}
-									criteria={c.criteria}
-									checkedIds={c.checkedIds}
-									onScoreChange={(next) => updateChild(p.id, c.id, { score: next })}
-									onCheckedIdsChange={(next) => updateChild(p.id, c.id, { checkedIds: next })}
-								/>
-								) : (
-								<span>{c.score === "" ? "-" : c.score}</span>
-								)}
-							</div>
-
-							<div className="flex items-center justify-center text-myApp-blueDark">
-								<span>{c.relation}</span>
+								<div className="flex items-center justify-center text-myApp-blueDark">
+									{/* <span>{p.relation}</span> */}
+								</div>
 							</div>
 						</div>
 
-						{showAllDetails && (
-							<div className="mt-2 rounded-xl px-4">
-								<KpiDetailsBar
-									kpiType={kpiType}
-									onKpiTypeChange={setKpiType}
-									unit={unit}
-									onUnitChange={setUnit}
-									startDate={startDate}
-									onStartDateChange={setStartDate}
-									endDate={endDate}
-									onEndDateChange={setEndDate}
-								/>
-								<ScoreBoxForQuantitativeKpi values={values} onChange={setValues} />
+						{/* children */}
+						{isExpanded(pKey) && (
+							<div className="mt-2 space-y-2">
+								{p.children.map((c) => {
+									const cKey = nodeKey(c);
+									const t = c.typeId ? typeById.get(c.typeId) : undefined;
+									const legacyType = toLegacyKpiType(t?.type ?? null);
+									const s = scores[cKey] ?? { score: "", checkedIds: [] };
+
+									return (
+										<div key={cKey} className="bg-myApp-white rounded-xl shadow-sm px-4 py-3 ml-10">
+											<div className={`${colClass}`}>
+												<div className="text-myApp-blueDark flex gap-2">
+													<span className="font-medium">
+														{(c.displayNo ? `${c.displayNo} ` : "") + c.title}
+													</span>
+												</div>
+
+												<div className="flex items-center justify-center text-myApp-blueLight">
+													<span className="font-semibold">{c.weightPercent}%</span>
+												</div>
+
+												<div className="flex items-center justify-center text-myApp-blueDark">
+													{mode === "edit" ? (
+														<KpiScoreInput
+															mode={mode}
+															kpiType={legacyType}
+															score={s.score}
+															criteria={undefined}
+															checkedIds={s.checkedIds ?? []}
+															onScoreChange={(next) => setItemScore(cKey, { score: next })}
+															onCheckedIdsChange={(next) => setItemScore(cKey, { checkedIds: next })}
+														/>
+														) : (
+														<span>{s.score === "" ? "-" : s.score}</span>
+													)}
+												</div>
+
+												<div className="flex items-center justify-center text-myApp-blueDark">
+													{/* <span>{c.relation}</span> */}
+												</div>
+											</div>
+
+											{showAllDetails && (
+												<div className="mt-2 rounded-xl px-4">
+													{/* <KpiDetailsBar
+														kpiType={kpiType}
+														onKpiTypeChange={setKpiType}
+														unit={unit}
+														onUnitChange={setUnit}
+														startDate={startDate}
+														onStartDateChange={setStartDate}
+														endDate={endDate}
+														onEndDateChange={setEndDate}
+													/>
+													<ScoreBoxForQuantitativeKpi values={values} onChange={setValues} /> */}
+												</div>
+											)}
+										</div>
+									)
+								})}
+
 							</div>
 						)}
 					</div>
-					))}
-
-				</div>
-				)}
-			</div>
-			))}
+				)
+  			})}
 
 		</div>
 	</div>

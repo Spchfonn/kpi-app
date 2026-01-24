@@ -114,8 +114,7 @@ const page = () => {
 			</div>
 
 			<div className='flex-1 overflow-y-auto'>
-				{/* <TwoLevelKpiTableForEvaluateKpi mode={mode} showAllDetails={showAllDetails}/> */}
-				<TwoLevelKpiTableForEvaluateKpi mode={mode} showAllDetails={true}/>
+				{/* <TwoLevelKpiTableForEvaluateKpi mode={mode} showAllDetails={true}/> */}
 			</div>
 
 			<ConfirmBox
