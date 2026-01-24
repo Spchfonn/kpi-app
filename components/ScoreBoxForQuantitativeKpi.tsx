@@ -1,25 +1,53 @@
 "use client";
 import React from "react";
 
+export type QuantitativeLevel = {
+  score: number;
+  value: number | "";
+  unit?: string | null;
+};
+
 type Props = {
+  mode: "view" | "edit";
   title?: string;
-  values: Record<1 | 2 | 3 | 4 | 5, number | "">;
-  onChange: (next: Props["values"]) => void;
+  levels: QuantitativeLevel[];
+  onChangeLevels?: (next: QuantitativeLevel[]) => void;
 };
 
 export default function ScoreBoxForQuantitativeKpi({
+  mode,
   title = "เกณฑ์คะแนน",
-  values,
-  onChange,
+  levels,
+  onChangeLevels,
 }: Props) {
-  const setValue = (level: 1 | 2 | 3 | 4 | 5, v: string) => {
-    const num = v === "" ? "" : Number(v);
-    onChange({ ...values, [level]: num });
+
+  const getValue = (lvl: 1 | 2 | 3 | 4 | 5) =>
+    levels.find((x) => Number(x.score) === lvl)?.value ?? "";
+
+  const unit =
+    levels.find((x) => x.unit != null)?.unit ??
+    null;
+
+  const setValue = (lvl: 1 | 2 | 3 | 4 | 5, v: string) => {
+    const num: number | "" = v === "" ? "" : Number(v);
+
+    if (!onChangeLevels) return;
+
+    const next = ([1, 2, 3, 4, 5] as const).map((s) => {
+      const old = levels.find((x) => Number(x.score) === s);
+      return {
+        score: s,
+        unit: old?.unit ?? unit ?? null,
+        value: s === lvl ? num : (old?.value ?? ""),
+      } as QuantitativeLevel;
+    });
+
+    onChangeLevels(next);
   };
 
   return (
     <div className="inline-block">
-      <div className="text-smallTitle font-medium text-myApp-blue">
+      <div className="text-smallTitle font-medium text-myApp-blueDark">
         {title}
       </div>
 
@@ -30,7 +58,7 @@ export default function ScoreBoxForQuantitativeKpi({
         {([1, 2, 3, 4, 5] as const).map((lvl) => (
             <React.Fragment key={lvl}>
             {/* levels */}
-            <div className="col-start-1 h-5.5 flex items-center justify-center text-myApp-blue text-smallTitle font-medium">
+            <div className="col-start-1 h-5.5 flex items-center justify-center text-myApp-blueDark text-smallTitle font-medium">
                 {lvl}
             </div>
 
@@ -38,9 +66,10 @@ export default function ScoreBoxForQuantitativeKpi({
             <div className="col-start-3 h-5.5 flex items-center ml-2">
                 <input
                   inputMode="decimal"
-                  value={values[lvl] ?? ""}
+                  value={getValue(lvl)}
+                  disabled={mode !== "edit"}
                   onChange={(e) => setValue(lvl, e.target.value)}
-                  className="w-full bg-transparent outline-none text-right text-myApp-blue text-smallTitle font-medium border-b-2 border-myApp-shadow"
+                  className="w-full bg-transparent outline-none text-right text-myApp-blueDark text-smallTitle font-medium border-b-2 border-myApp-shadow"
                 />
             </div>
             </React.Fragment>
