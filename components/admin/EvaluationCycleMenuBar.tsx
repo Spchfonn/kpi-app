@@ -1,7 +1,7 @@
 import React from 'react'
 import Link from 'next/link'
 
-export type TabKey = "basic" | "peer" | "employeeStatus" | "kpiStructure" | "dashboard";
+export type TabKey = "basic" | "evaluationAssignment" | "employeeStatus" | "kpiStructure" | "dashboard";
 
 const base =
   "px-3 py-1.5 text-body font-medium rounded-full border-2 transition-colors";
@@ -28,8 +28,8 @@ export default function EvaluationCycleMenuBar({
 			</button>
 
 			<button
-				className={tabClass(active === "peer")}
-				onClick={() => onChange?.("peer")}>
+				className={tabClass(active === "evaluationAssignment")}
+				onClick={() => onChange?.("evaluationAssignment")}>
 				ข้อมูลคู่ประเมิน
 			</button>
 

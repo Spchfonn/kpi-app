@@ -25,6 +25,12 @@ const schema = z.object({
 	isActive: z.boolean().optional().default(true),
 });
 
+export const PREFIX_TH: Record<"MR" | "MRS" | "MS", string> = {
+	MR: "นาย",
+	MRS: "นาง",
+	MS: "นางสาว",
+};
+
 export async function POST(req: Request) {
 	try {
 		const body = await req.json();
@@ -101,5 +107,11 @@ export async function GET(req: Request) {
 		},
 	});
 
-	return NextResponse.json({ ok: true, data: rows });
+	const data = rows.map((e) => ({
+		...e,
+		prefixNameTh: PREFIX_TH[e.prefixName],
+		fullNameTh: `${PREFIX_TH[e.prefixName]}${e.name} ${e.lastName}`,
+	}));
+
+	return NextResponse.json({ ok: true, data });
 }

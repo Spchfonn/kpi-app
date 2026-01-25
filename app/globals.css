@@ -23,6 +23,7 @@
   /* font sizes */
   --text-bigTitle: 28px;
   --text-title: 18px;
+  --text-midTitle: 16px;
   --text-nav: 14px;
   --text-body: 12px;
   --text-body-changed: 13px;
@@ -30,7 +31,7 @@
   --text-smallBody: 10px;
   --text-smallTitle: 11px;
   --text-smallButton: 9px;
-  --text-smallestBody: 6px;
+  --text-smallestBody: 8px;
 }
 
 :root {
