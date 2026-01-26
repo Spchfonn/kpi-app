@@ -95,6 +95,21 @@ function stripForPut(n: Node): any {
 	};
 }
 
+function assignDisplayNo(tree: Node[]): Node[] {
+  return tree.map((group, gi) => {
+    const groupNo = `${gi + 1}`;
+
+    return {
+      ...group,
+      displayNo: groupNo,
+      children: group.children.map((item, ii) => ({
+        ...item,
+        displayNo: `${groupNo}.${ii + 1}`,
+      })),
+    };
+  });
+}
+
 const page = () => {
 	const router = useRouter();
   	const { evaluateeId } = useParams<{ evaluateeId: string }>();
@@ -125,6 +140,8 @@ const page = () => {
 
 	const [cycleStartIso, setCycleStartIso] = useState<string>("");
 	const [cycleEndIso, setCycleEndIso] = useState<string>("");
+
+	const [aiTree, setAiTree] = useState<Node[] | null>(null);
 
 	// get plan for DB
 	useEffect(() => {
@@ -237,6 +254,57 @@ const page = () => {
 		}
 	};
 
+	const generateKpiByAI = async () => {
+	try {
+		setSaving(true);
+		setError("");
+
+		const res = await fetch("/api/generate-kpi", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+		});
+
+		const j = await res.json();
+		if (!j.success) throw new Error(j.error ?? "AI generate failed");
+
+		// map kpi_type -> typeId
+		const typeMap = new Map(
+			types.map((t) => [t.type.toLowerCase(), t.id])
+		);
+
+		const aiNodes: Node[] = j.round1_raw.level1_groups.map(
+			(group: any) => ({
+			nodeType: "GROUP",
+			title: group.group_title,
+			description: group.group_goal,
+			weightPercent: group.group_percent,
+			children: group.level2_kpis.map((kpi: any) => ({
+				nodeType: "ITEM",
+				title: kpi.title,
+				description: kpi.description,
+				weightPercent: kpi.kpi_percent,
+				typeId: typeMap.get(kpi.kpi_type.toLowerCase()) ?? null,
+				unit: null,
+				startDate: cycleStartIso,
+				endDate: cycleEndIso,
+				children: [],
+			})),
+			})
+		);
+
+		// 👉 ใส่ displayNo ชั่วคราว
+		const withDisplayNo = assignDisplayNo(aiNodes);
+
+		// 👉 แสดงทันที (ยังไม่ save)
+		setAiTree(withDisplayNo);
+	} catch (e: any) {
+		console.error(e);
+		setError(e.message ?? "ไม่สามารถสร้าง KPI จาก AI ได้");
+	} finally {
+		setSaving(false);
+	}
+	};
+
 	if (loading) {
 		return <div className="px-20 py-7.5">Loading...</div>;
 	}
@@ -272,7 +340,14 @@ const page = () => {
 					</Button>
 				</Link>
 
-				<Button variant="primary" primaryColor="pink">ให้ระบบช่วยแนะนำตัวชี้วัด</Button>
+				<Button
+					variant="primary"
+					primaryColor="pink"
+					onClick={generateKpiByAI}
+					disabled={saving}
+					>
+					{saving ? "กำลังสร้าง KPI..." : "ให้ระบบช่วยแนะนำตัวชี้วัด"}
+				</Button>
 
 				<div className="flex ml-auto gap-2.5">
 					{/* if in 'view' mode, show edit button
@@ -298,16 +373,22 @@ const page = () => {
 			)}
 
 			<div className='flex-1 overflow-y-auto'>
-				<TwoLevelKpiTable
-					mode={mode}
-					showAllDetails={showAllDetails}
-					selectable={false}
-					tree={mode === "edit" ? draftTree : tree}
-					kpiTypes={types}
-					onChangeTree={setDraftTree}
-					defaultStartDate={cycleStartIso}
-  					defaultEndDate={cycleEndIso}
-				/>
+			<TwoLevelKpiTable
+				mode={mode}
+				showAllDetails={showAllDetails}
+				selectable={false}
+				tree={
+					aiTree
+						? aiTree
+						: mode === "edit"
+						? draftTree
+						: tree
+				}
+				kpiTypes={types}
+				onChangeTree={setDraftTree}
+				defaultStartDate={cycleStartIso}
+				defaultEndDate={cycleEndIso}
+			/>
 			</div>
 
 			<ConfirmBox
@@ -318,6 +399,28 @@ const page = () => {
 				onCancel={() => setConfirmOpenDelete(false)}
         		onConfirm={() => setConfirmOpenDelete(false)}
 			/>
+			{aiTree && (
+				<div className="flex justify-end gap-2 mt-4">
+					<Button
+						primaryColor="red"
+						onClick={() => setAiTree(null)}
+					>
+						สร้างใหม่อีก
+					</Button>
+
+					<Button
+						variant="primary"
+						primaryColor="green"
+						onClick={() => {
+						setDraftTree(aiTree);
+						setMode("edit");
+						setAiTree(null);
+						}}
+					>
+						ใช้ KPI ชุดนี้
+					</Button>
+				</div>
+			)}
 		</div>
 	</>
   )

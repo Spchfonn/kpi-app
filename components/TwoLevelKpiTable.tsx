@@ -35,7 +35,14 @@ export type KpiTreeNode = {
 };
 
 const uid = () => Math.random().toString(36).slice(2, 10);
-const nodeKey = (n: KpiTreeNode) => n.id ?? n.clientId!;
+
+const nodeKey = (n: KpiTreeNode) =>
+  n.id ??
+  n.clientId ??
+  n.displayNo ??   // สำคัญมาก (คุณมีอยู่แล้ว)
+  (() => {
+    throw new Error("Node has no stable key");
+  })();
 
 function CheckBox({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
 	return (
