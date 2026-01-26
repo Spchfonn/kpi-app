@@ -4,6 +4,8 @@ import { FiChevronDown, FiChevronRight } from "react-icons/fi";
 import KpiDetailsBar, { type KpiTypeChoice } from "./KpiDetailsBar";
 import ScoreBoxForQuantitativeKpi from "./ScoreBoxForQuantitativeKpi";
 import KpiScoreInput from "./user/KpiScoreInput";
+import ScoreBoxForCustomKpi from "./ScoreBoxForCustomKpi";
+import ScoreBoxForQualitativeKpi from "./ScoreBoxForQualitativeKpi";
 
 type ChecklistCriterion = {
 	id: string;
@@ -57,6 +59,7 @@ export type EvalScoreState = {
   
 type Props = {
 	mode: "view" | "edit";
+	readOnlyDetails?: boolean;
 	showAllDetails: boolean;
   
 	tree: KpiTreeNode[];
@@ -75,6 +78,7 @@ function toLegacyKpiType(t?: "QUANTITATIVE"|"QUALITATIVE"|"CUSTOM" | null) {
 
 export default function TwoLevelKpiTableForEvaluateKpi({
 	mode,
+	readOnlyDetails = true,
 	showAllDetails,
 	tree,
 	kpiTypes,
@@ -83,6 +87,8 @@ export default function TwoLevelKpiTableForEvaluateKpi({
   }: Props) {
 
 	const colClass = "grid grid-cols-[1fr_100px_100px_110px] items-center"
+
+	const detailsMode: "view" | "edit" = readOnlyDetails ? "view" : mode;
 
 	const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 	const isExpanded = (key: string) => expanded[key] ?? true;
@@ -100,130 +106,171 @@ export default function TwoLevelKpiTableForEvaluateKpi({
 	const setItemScore = (itemKey: string, patch: Partial<EvalScoreState>) => {
 		onChangeScores((prev) => ({
 			...prev,
-			[itemKey]: { scores: "", ...(prev[itemKey] ?? {}), ...patch },
+			[itemKey]: { scores: "", checkedIds: [], ...(prev[itemKey] ?? {}), ...patch },
 		}));
 	};
 
-  return (
-	<div className="w-full">
-		{/* header */}
-		<div className="sticky top-0 z-20 bg-myApp-cream">
-			<div className="bg-myApp-blue rounded-3xl shadow-sm px-4 py-4 text-myApp-cream text-button font-semibold">
-				<div className={`${colClass} place-items-center`}>
-					<div>ตัวชี้วัด</div>
-					<div>ค่าน้ำหนัก</div>
-					<div>คะแนน</div>
-					<div>ความสัมพันธ์</div>
+	const renderRubric = (c: KpiTreeNode) => {
+		const rubric = (c as any).type?.rubric;
+		if (!rubric) return null;
+		
+		switch (rubric.kind) {
+			case "QUANTITATIVE_1_TO_5":
+				return (
+					<ScoreBoxForQuantitativeKpi
+						mode={detailsMode}
+						levels={rubric.levels}
+					/>
+				);
+		
+			case "QUALITATIVE_CHECKLIST":
+				return (
+					<ScoreBoxForQualitativeKpi
+						mode={detailsMode}
+						items={rubric.checklist.map((x: any, i: number) => ({
+							id: i + 1,
+							title: x.item,
+							weight: x.weight_percent,
+						}))}
+						onChange={() => {}}
+					/>
+				);
+		
+			case "CUSTOM_DESCRIPTION_1_TO_5":
+				return (
+					<ScoreBoxForCustomKpi
+						mode={detailsMode}
+						levels={rubric.levels}
+					/>
+				);
+		
+			default:
+				return null;
+		}
+	};
+
+	return (
+		<div className="w-full">
+			{/* header */}
+			<div className="sticky top-0 z-20 bg-myApp-cream">
+				<div className="bg-myApp-blue rounded-3xl shadow-sm px-4 py-4 text-myApp-cream text-button font-semibold">
+					<div className={`${colClass} place-items-center`}>
+						<div>ตัวชี้วัด</div>
+						<div>ค่าน้ำหนัก</div>
+						<div>คะแนน</div>
+						<div>ความสัมพันธ์</div>
+					</div>
 				</div>
 			</div>
-		</div>
 
-		{/* rows */}
-		<div className="mt-2 space-y-2 text-body-changed font-medium">
-			{tree.map((p) => {
-				const pKey = nodeKey(p);
-				return (
-					<div key={pKey}>
-						{/* parent row */}
-						<div className="bg-myApp-white rounded-xl shadow-sm px-4 py-3">
-							<div className={`${colClass}`}>
-								<div className="flex items-center gap-1 text-myApp-blueDark">
+			{/* rows */}
+			<div className="mt-2 space-y-2 text-body-changed font-medium">
+				{tree.map((p) => {
+					const pKey = nodeKey(p);
+					return (
+						<div key={pKey}>
+							{/* parent row */}
+							<div className="bg-myApp-white rounded-xl shadow-sm px-4 py-3">
+								<div className={`${colClass}`}>
+									<div className="flex items-center gap-1 text-myApp-blueDark">
 
-									<button
-										type="button"
-										onClick={() => toggleExpand(pKey)}
-										className="p-1 rounded-xl hover:bg-myApp-shadow/40 transition"
-										title="ขยาย/ย่อ"
-									>
-										{isExpanded(pKey) ? <FiChevronDown /> : <FiChevronRight />}
-									</button>
+										<button
+											type="button"
+											onClick={() => toggleExpand(pKey)}
+											className="p-1 rounded-xl hover:bg-myApp-shadow/40 transition"
+											title="ขยาย/ย่อ"
+										>
+											{isExpanded(pKey) ? <FiChevronDown /> : <FiChevronRight />}
+										</button>
 
-									<span className="text-body font-medium">
-										{(p.displayNo ? `${p.displayNo}. ` : "") + p.title}
-									</span>
-								</div>
+										<span className="text-body font-medium">
+											{(p.displayNo ? `${p.displayNo}. ` : "") + p.title}
+										</span>
+									</div>
 
-								<div className="flex items-center justify-center text-myApp-blueDark">
-									<span className="text-body font-medium">{p.weightPercent}%</span>
-								</div>
+									<div className="flex items-center justify-center text-myApp-blueDark">
+										<span className="text-body font-medium">{p.weightPercent}%</span>
+									</div>
 
-								<div></div>
+									<div></div>
 
-								<div className="flex items-center justify-center text-myApp-blueDark">
-									{/* <span>{p.relation}</span> */}
+									<div className="flex items-center justify-center text-myApp-blueDark">
+										{/* <span>{p.relation}</span> */}
+									</div>
 								</div>
 							</div>
-						</div>
 
-						{/* children */}
-						{isExpanded(pKey) && (
-							<div className="mt-2 space-y-2">
-								{p.children.map((c) => {
-									const cKey = nodeKey(c);
-									const t = c.typeId ? typeById.get(c.typeId) : undefined;
-									const legacyType = toLegacyKpiType(t?.type ?? null);
-									const s = scores[cKey] ?? { score: "", checkedIds: [] };
+							{/* children */}
+							{isExpanded(pKey) && (
+								<div className="mt-2 space-y-2">
+									{p.children.map((c) => {
+										const cKey = nodeKey(c);
+										const t = c.typeId ? typeById.get(c.typeId) : undefined;
+										const legacyType = toLegacyKpiType(t?.type ?? null);
+										const s = scores[cKey] ?? { score: "", checkedIds: [] };
 
-									return (
-										<div key={cKey} className="bg-myApp-white rounded-xl shadow-sm px-4 py-3 ml-10">
-											<div className={`${colClass}`}>
-												<div className="text-myApp-blueDark flex gap-2">
-													<span className="font-medium">
-														{(c.displayNo ? `${c.displayNo} ` : "") + c.title}
-													</span>
+										return (
+											<div key={cKey} className="bg-myApp-white rounded-xl shadow-sm px-4 py-3 ml-10">
+												<div className={`${colClass}`}>
+													<div className="text-myApp-blueDark flex gap-2">
+														<span className="font-medium">
+															{(c.displayNo ? `${c.displayNo} ` : "") + c.title}
+														</span>
+													</div>
+
+													<div className="flex items-center justify-center text-myApp-blueLight">
+														<span className="font-semibold">{c.weightPercent}%</span>
+													</div>
+
+													<div className="flex items-center justify-center text-myApp-blueDark">
+														{mode === "edit" ? (
+															<KpiScoreInput
+																mode={mode}
+																kpiType={legacyType}
+																score={s.score}
+																criteria={undefined}
+																checkedIds={s.checkedIds ?? []}
+																onScoreChange={(next) => setItemScore(cKey, { score: next })}
+																onCheckedIdsChange={(next) => setItemScore(cKey, { checkedIds: next })}
+															/>
+															) : (
+															<span>{s.score === "" ? "-" : s.score}</span>
+														)}
+													</div>
+
+													<div className="flex items-center justify-center text-myApp-blueDark">
+														{/* <span>{c.relation}</span> */}
+													</div>
 												</div>
 
-												<div className="flex items-center justify-center text-myApp-blueLight">
-													<span className="font-semibold">{c.weightPercent}%</span>
-												</div>
-
-												<div className="flex items-center justify-center text-myApp-blueDark">
-													{mode === "edit" ? (
-														<KpiScoreInput
-															mode={mode}
-															kpiType={legacyType}
-															score={s.score}
-															criteria={undefined}
-															checkedIds={s.checkedIds ?? []}
-															onScoreChange={(next) => setItemScore(cKey, { score: next })}
-															onCheckedIdsChange={(next) => setItemScore(cKey, { checkedIds: next })}
+												{showAllDetails && (
+													<div className="flex flex-col mt-2 rounded-xl px-4 gap-1.5">
+														<KpiDetailsBar
+															mode={detailsMode}
+															typeId={c.typeId ?? null}
+															onTypeIdChange={() => {}}
+															kpiTypes={kpiTypes}
+															unit={c.unit ?? ""}
+															onUnitChange={() => {}}
+															startDate={c.startDate ?? ""}
+															onStartDateChange={() => {}}
+															endDate={c.endDate ?? ""}
+															onEndDateChange={() => {}}
 														/>
-														) : (
-														<span>{s.score === "" ? "-" : s.score}</span>
-													)}
-												</div>
-
-												<div className="flex items-center justify-center text-myApp-blueDark">
-													{/* <span>{c.relation}</span> */}
-												</div>
+														{renderRubric(c)}
+													</div>
+												)}
 											</div>
+										)
+									})}
 
-											{showAllDetails && (
-												<div className="mt-2 rounded-xl px-4">
-													{/* <KpiDetailsBar
-														kpiType={kpiType}
-														onKpiTypeChange={setKpiType}
-														unit={unit}
-														onUnitChange={setUnit}
-														startDate={startDate}
-														onStartDateChange={setStartDate}
-														endDate={endDate}
-														onEndDateChange={setEndDate}
-													/>
-													<ScoreBoxForQuantitativeKpi values={values} onChange={setValues} /> */}
-												</div>
-											)}
-										</div>
-									)
-								})}
+								</div>
+							)}
+						</div>
+					)
+				})}
 
-							</div>
-						)}
-					</div>
-				)
-  			})}
-
+			</div>
 		</div>
-	</div>
-  );
+	);
 }
