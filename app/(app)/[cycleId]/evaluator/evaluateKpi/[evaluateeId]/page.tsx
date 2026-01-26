@@ -2,7 +2,8 @@
 import Button from '@/components/Button'
 import ConfirmBox from '@/components/ConfirmBox';
 import KpiLevelBox from '@/components/KpiLevelBox'
-import TwoLevelKpiTableForEvaluateKpi from '@/components/TwoLevelKpiTableForEvaluateKpi';
+import TwoLevelKpiTable from '@/components/TwoLevelKpiTable';
+import TwoLevelKpiTableForEvaluateKpi, { EvalScoreState, KpiTreeNode } from '@/components/TwoLevelKpiTableForEvaluateKpi';
 import Link from 'next/link';
 import { useState } from 'react'
 
@@ -11,10 +12,24 @@ type Row = {
 	name: string;
 	weight: number;
 	status: string;
-  };
+};
+
+type KpiType = { id: string; type: "QUANTITATIVE"|"QUALITATIVE"|"CUSTOM"; name: string; rubric?: any };
+
+const nodeKey = (n: KpiTreeNode) => n.id ?? n.clientId!;
 
 const page = () => {
 	const [mode, setMode] = useState<"view" | "edit">("view");
+	const [showAllDetails, setShowAllDetails] = useState(false);
+
+	const [loading, setLoading] = useState(true);
+	const [saving, setSaving] = useState(false);
+	const [error, setError] = useState<string | null>(null);
+
+	const [tree, setTree] = useState<KpiTreeNode[]>([]);
+	const [types, setTypes] = useState<KpiType[]>([]);
+	const [scores, setScores] = useState<Record<string, EvalScoreState>>({});
+	const [scoresDraft, setScoresDraft] = useState<Record<string, EvalScoreState>>({});
 
 	const [data, setData] = useState<Row>({
 		id: "row-1",
@@ -61,13 +76,11 @@ const page = () => {
 	setPendingDeleteId(null);
 	};
 
-	const [showAllDetails, setShowAllDetails] = useState(false);
-
   	return (
 	<>
 		<div className='px-20 py-7.5 h-[calc(100vh-56px)] flex flex-col'>
-			<div className='flex items-center mb-2.5 gap-7'>
-				<p className='text-title font-medium text-myApp-blueDark'>นางสาวรักงาน สู้ชีวิต / กำหนดตัวชี้วัด</p>
+			<div className='flex items-center mb-2.5 gap-6'>
+				<p className='text-title font-medium text-myApp-blueDark'>กำหนดตัวชี้วัด (นางสาวรักงาน สู้ชีวิต)</p>
 				<div className='flex gap-2'>
 					<p className='text-button font-semibold text-myApp-blueDark'>สถานะการประเมินตัวชี้วัด</p>
 					<p className='text-button font-semibold text-myApp-red'>ยังไม่ประเมิน</p>
@@ -77,7 +90,6 @@ const page = () => {
 					<p className='text-button font-semibold text-myApp-green'>0</p>
 					<p className='text-button font-semibold text-myApp-blueDark'>/ 4</p>
 				</div>
-				{/* <KpiLevelBox level={2} /> */}
 				<div className='flex ml-auto gap-2'>
 					<p className='text-title font-semibold text-myApp-blueDark'>สรุปผลคะแนน</p>
 					<p className='text-title font-semibold text-myApp-blueDark'>95%</p>
@@ -86,12 +98,12 @@ const page = () => {
 
 			{/* menu tab */}
 			<div className='flex items-center mb-3 gap-2.5'>
-				{/* <Button 
+				<Button 
 					variant={showAllDetails ? "outline" : "primary"}
 					primaryColor="blueDark"
 					onClick={() => setShowAllDetails((prev) => !prev)}>
 					{showAllDetails ? "ซ่อนเกณฑ์คะแนน" : "แสดงเกณฑ์คะแนน"}
-				</Button> */}
+				</Button>
 
 				<div className="flex ml-auto gap-2.5">
 					<Button
@@ -114,7 +126,14 @@ const page = () => {
 			</div>
 
 			<div className='flex-1 overflow-y-auto'>
-				{/* <TwoLevelKpiTableForEvaluateKpi mode={mode} showAllDetails={true}/> */}
+				<TwoLevelKpiTableForEvaluateKpi
+					mode={mode}
+					showAllDetails={showAllDetails}
+					tree={tree}
+					kpiTypes={types}
+					scores={scores}
+					onChangeScores={setScores}
+				/>
 			</div>
 
 			<ConfirmBox

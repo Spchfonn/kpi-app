@@ -112,7 +112,10 @@ function assignDisplayNo(tree: Node[]): Node[] {
 
 const page = () => {
 	const router = useRouter();
-  	const { evaluateeId } = useParams<{ evaluateeId: string }>();
+	const { cycleId, evaluateeId } = useParams<{
+		cycleId: string;
+		evaluateeId: string;
+	}>();
 	const [evaluateeName, setEvaluateeName] = useState<string>("");
 
 	const [mode, setMode] = useState<"view" | "edit">("view");
@@ -160,7 +163,7 @@ const page = () => {
 				// const role = localStorage.getItem("activeRole");
 				// if (role !== "EVALUATOR") router.push("/sign-in/selectRole");
 		
-				const cyclePublicId = u.cycle.id;
+				const cyclePublicId = cycleId;
 				const evaluatorId = u.employeeId;
 		
 				// 1) resolvePlan -> get planId
@@ -303,6 +306,10 @@ const page = () => {
 	} finally {
 		setSaving(false);
 	}
+	const goCopyKpi = () => {
+		router.push(
+		  `/${encodeURIComponent(cycleId)}/evaluator/defineKpi/${encodeURIComponent(evaluateeId)}/copyKpi?targetPlanId=${encodeURIComponent(planId ?? "")}`
+		);
 	};
 
 	if (loading) {
@@ -332,13 +339,12 @@ const page = () => {
 					{showAllDetails ? "ซ่อนเกณฑ์คะแนน" : "แสดงเกณฑ์คะแนน"}
 				</Button>
 
-				<Link href="/user/kpi/copyKpi">
-					<Button
-						variant="primary"
-						primaryColor="yellow">
-						คัดลอกตัวชี้วัด
-					</Button>
-				</Link>
+				<Button
+					variant="primary"
+					primaryColor="yellow"
+					onClick={goCopyKpi}>
+					คัดลอกตัวชี้วัด
+				</Button>
 
 				<Button
 					variant="primary"
@@ -424,6 +430,7 @@ const page = () => {
 		</div>
 	</>
   )
+}
 }
 
 export default page

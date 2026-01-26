@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FiUser, FiFilter, FiX } from "react-icons/fi";
 import DropDown from "../DropDown";
 
@@ -50,6 +50,8 @@ export default function SelectOwnerKpiModal({
 	document.addEventListener("keydown", onKey);
 	return () => document.removeEventListener("keydown", onKey);
   }, [open, onClose]);
+
+  const [q, setQ] = useState("");
 
   if (!open) return null;
 
@@ -103,6 +105,17 @@ export default function SelectOwnerKpiModal({
 		  >
 			<FiX className="text-xl text-myApp-blueDark" />
 		  </button>
+		</div>
+
+		{/* search bar */}
+		<div className="mt-4 flex items-center gap-3">
+			<input
+				value={q}
+				onChange={(e) => setQ(e.target.value)}
+				placeholder="ค้นหา: ชื่อ / รหัสพนักงาน / ตำแหน่ง"
+				className="w-full rounded-2xl border border-myApp-grey px-4 py-2
+							text-body outline-none focus:border-myApp-blueDark"
+			/>
 		</div>
 
 		{/* table header */}
