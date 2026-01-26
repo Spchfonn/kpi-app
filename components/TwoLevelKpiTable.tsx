@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { FiChevronDown, FiChevronRight, FiPlusCircle, FiTrash2, FiArrowUp, FiArrowDown, FiCheck } from "react-icons/fi";
 import KpiDetailsBar from "./KpiDetailsBar";
 import ScoreBoxForQuantitativeKpi from "./ScoreBoxForQuantitativeKpi";
@@ -62,6 +62,10 @@ type Props = {
 	kpiTypes: { id: string; type: "QUANTITATIVE"|"QUALITATIVE"|"CUSTOM"; name: string }[];
 	defaultStartDate: string;
 	defaultEndDate: string;
+
+	// for copy kpi
+	selectedIds?: string[];
+	onChangeSelectedIds?: (ids: string[]) => void;
 };
 
 export default function TwoLevelKpiTable({
@@ -72,47 +76,70 @@ export default function TwoLevelKpiTable({
 	onChangeTree,
 	kpiTypes,
 	defaultStartDate,
-	defaultEndDate
+	defaultEndDate,
+	selectedIds,
+	onChangeSelectedIds
   }: Props) {
 
 	const rows = tree;
 	const setRows = onChangeTree;
 
-	const [selected, setSelected] = useState<Set<string>>(new Set());
-	const isSelected = (id: string) => selected.has(id);
+	const selectedSet = useMemo(
+		() => new Set(selectedIds ?? []),
+		[selectedIds]
+	);
+	  
+	const setSelectedSet = (next: Set<string>) => {
+		onChangeSelectedIds?.(Array.from(next));
+	};
+	const isSelected = (id: string) => selectedSet.has(id);
 
 	const toggleParentSelect = (parentKey: string, checked: boolean) => {
-		setSelected((prev) => {
-		  const next = new Set(prev);
-		  const p = rows.find((x) => nodeKey(x) === parentKey);
-		  if (!p) return next;
-	
-		  if (checked) {
+		const next = new Set(selectedSet);
+		const p = rows.find((x) => nodeKey(x) === parentKey);
+		if (!p) return;
+	  
+		if (checked) {
 			next.add(parentKey);
 			p.children.forEach((c) => next.add(nodeKey(c)));
-		  } else {
+		}
+		else {
 			next.delete(parentKey);
 			p.children.forEach((c) => next.delete(nodeKey(c)));
-		  }
-		  return next;
-		});
+		}
+	  
+		setSelectedSet(next);
 	};
 
 	const toggleChildSelect = (parentKey: string, childKey: string, checked: boolean) => {
-		setSelected((prev) => {
-			const next = new Set(prev);
-			if (checked) next.add(childKey);
-			else next.delete(childKey);
+		const next = new Set(selectedSet);
+	  
+		const p = rows.find((x) => nodeKey(x) === parentKey);
+		if (!p) return;
+	  
+		if (checked) {
+			next.add(childKey);
+			next.add(parentKey);
+		}
+		else {
+			next.delete(childKey);
+		
+			const anyChildStillSelected = p.children.some((c) => next.has(nodeKey(c)));
+		
+			if (!anyChildStillSelected) {
+				next.delete(parentKey);
+			}
+			else {
+				next.add(parentKey);
+			}
+		}
 
-			const p = rows.find((x) => nodeKey(x) === parentKey);
-			if (!p) return next;
+		setSelectedSet(next);
+	};
 
-			const allChildrenSelected = p.children.every((c) => next.has(nodeKey(c)));
-			if (allChildrenSelected) next.add(parentKey);
-			else next.delete(parentKey);
-
-			return next;
-		});
+	const isParentChecked = (p: KpiTreeNode) => {
+		const pKey = nodeKey(p);
+		return selectedSet.has(pKey) || p.children.some((c) => selectedSet.has(nodeKey(c)));
 	};
 
 	const colClass = mode === "edit"
@@ -183,13 +210,17 @@ export default function TwoLevelKpiTable({
 
 	const deleteParent = (parentKey: string) => {
 		setRows((prev) => prev.filter((p) => nodeKey(p) !== parentKey));
-		setSelected((prev) => {
-			const next = new Set(prev);
-			next.delete(parentKey);
-			return next;
-		});
+	  
+		// update selection
+		const next = new Set(selectedSet);
+		next.delete(parentKey);
+	  
+		const p = rows.find((x) => nodeKey(x) === parentKey);
+		if (p) p.children.forEach((c) => next.delete(nodeKey(c)));
+	  
+		setSelectedSet(next);
 	};
-
+	  
 	const deleteChild = (parentKey: string, childKey: string) => {
 		setRows((prev) =>
 			prev.map((p) => {
@@ -197,11 +228,23 @@ export default function TwoLevelKpiTable({
 				return { ...p, children: p.children.filter((c) => nodeKey(c) !== childKey) };
 			})
 		);
-		setSelected((prev) => {
-			const next = new Set(prev);
-			next.delete(childKey);
-			return next;
-		});
+	  
+		const next = new Set(selectedSet);
+		next.delete(childKey);
+	  
+		// update parent checkbox
+		const p = rows.find((x) => nodeKey(x) === parentKey);
+		if (p) {
+			const remainingChildrenKeys = p.children
+				.filter((c) => nodeKey(c) !== childKey)
+				.map((c) => nodeKey(c));
+		
+			const allRemainingSelected = remainingChildrenKeys.length > 0 && remainingChildrenKeys.every((k) => next.has(k));
+			if (allRemainingSelected) next.add(parentKey);
+			else next.delete(parentKey);
+		}
+	  
+		setSelectedSet(next);
 	};
 
 	function moveItem<T>(arr: T[], from: number, to: number) {
@@ -299,7 +342,7 @@ export default function TwoLevelKpiTable({
 								
 									{selectable && (
 										<CheckBox
-											checked={isSelected(pKey)}
+											checked={isParentChecked(p)}
 											onChange={(ck) => toggleParentSelect(pKey, ck)}
 										/>
 									)}
@@ -402,7 +445,7 @@ export default function TwoLevelKpiTable({
 															checked={isSelected(cKey)}
 															onChange={(ck) => toggleChildSelect(pKey, cKey, ck)}
 														/>
-														)}
+													)}
 
 													{mode === "edit" ? (
 														<div className="flex items-center gap-2 w-full">
