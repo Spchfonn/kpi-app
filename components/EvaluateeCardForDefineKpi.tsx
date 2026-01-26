@@ -30,7 +30,7 @@ function PillButton({
 	  <Link
 		href={href}
 		onClick={(e) => {
-		  e.stopPropagation(); // กันไม่ให้คลิกทะลุไป Link ครอบการ์ด
+		  e.stopPropagation();
 		}}
 		className={`
 		  inline-flex items-center

@@ -30,7 +30,7 @@ function PillButton({
 	  <Link
 		href={href}
 		onClick={(e) => {
-		  e.stopPropagation(); // กันไม่ให้คลิกทะลุไป Link ครอบการ์ด
+		  e.stopPropagation();
 		}}
 		className={`
 		  inline-flex items-center
@@ -55,25 +55,20 @@ export default function EvaluateeCardForEvaluateKpi({
 	const router = useRouter();
 	const pathname = usePathname();
   
-	// หา base path ของหน้าปัจจุบันให้เป็น /.../evaluateKpi หรือ /.../evaluateKpi
+	// หา base path ของหน้าปัจจุบันให้เป็น /.../evaluateKpi
 	const base = useMemo(() => {
 	  if (!pathname) return "";
   
-	  // ตัวอย่าง pathname:
-	  // /1/evaluator/evaluateKpi
-	  // /1/evaluator/evaluateKpi/123
-	  // /1/evaluator/evaluateKpi
-	  // /1/evaluator/evaluateKpi/123
 	  const parts = pathname.split("/").filter(Boolean);
   
-	  const idxDefine = parts.indexOf("evaluateKpi");
+	  const idxDefine = parts.indexOf("defineKpi");
 	  if (idxDefine !== -1) return "/" + parts.slice(0, idxDefine + 1).join("/");
   
 	  const idxEval = parts.indexOf("evaluateKpi");
 	  if (idxEval !== -1) return "/" + parts.slice(0, idxEval + 1).join("/");
   
-	  // fallback (ถ้าเรียกการ์ดจากที่อื่น) — เลือก evaluateKpi ไว้ก่อน
-	  return "/" + parts.slice(0, 2).join("/") + "/evaluator/evaluateKpi";
+	  // fallback (ถ้าเรียกการ์ดจากที่อื่น) — เลือก defineKpi ไว้ก่อน
+	  return "/" + parts.slice(0, 2).join("/") + "/evaluator/defineKpi";
 	}, [pathname]);
   
 	const profileHref = `${base}/${id}/profile`;
