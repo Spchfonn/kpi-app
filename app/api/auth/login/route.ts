@@ -11,13 +11,31 @@ export async function POST(req: Request) {
     include: { employee: true },
   });
 
-  if (!user || !user.isActive || !user.employeeId) {
+  if (!user || !user.isActive) {
     return Response.json({ message: "Unauthorized" }, { status: 401 });
   }
 
   // 2. password
   const ok = await bcrypt.compare(password, user.passwordHash);
   if (!ok) {
+    return Response.json({ message: "Unauthorized" }, { status: 401 });
+  }
+
+  // ===============================
+  // 🔥 ADMIN CASE
+  // ===============================
+  if (user.isAdmin) {
+    return Response.json({
+      userId: user.id,
+      isAdmin: true,
+      redirectTo: "/admin",
+    });
+  }
+
+  // ===============================
+  // 👤 NORMAL USER CASE
+  // ===============================
+  if (!user.employeeId) {
     return Response.json({ message: "Unauthorized" }, { status: 401 });
   }
 
@@ -48,7 +66,7 @@ export async function POST(req: Request) {
     );
   }
 
-  // 5. หา role ที่เป็นไปได้
+  // 5. roles
   const roles = new Set<string>();
   assignments.forEach(a => {
     if (a.evaluatorId === user.employeeId) roles.add("EVALUATOR");
@@ -56,12 +74,13 @@ export async function POST(req: Request) {
   });
 
   const fullName = user.employee
-  ? `${user.employee.name} ${user.employee.lastName}`
-  : "";
+    ? `${user.employee.name} ${user.employee.lastName}`
+    : "";
 
   return Response.json({
     userId: user.id,
-    employeeId: user.employeeId,fullName,
+    employeeId: user.employeeId,
+    fullName,
     cycle: {
       id: cycle.publicId,
       name: cycle.name,

@@ -136,6 +136,8 @@ model User {
   passwordHash String
   isActive     Boolean @default(true)
 
+  isAdmin      Boolean @default(false)
+
   // relation กับ Employee
   employeeId String?   @unique
   employee   Employee? @relation(fields: [employeeId], references: [id])
