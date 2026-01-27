@@ -1,6 +1,7 @@
 import React from "react";
-import type { KpiType } from "../KpiDetailsBar";
 import { FiCheck } from "react-icons/fi";
+
+export type KpiType = "quantitative" | "qualitative" | "custom" | null;
 
 type ChecklistCriterion = { id: string; weight: number };
 
@@ -19,10 +20,7 @@ function CheckBox({
 			title={title}
 			onClick={() => onChange(!checked)}
 			className={`
-			h-4 w-4 rounded
-			border
-			flex items-center justify-center
-			cursor-pointer transition
+			h-4 w-4 rounded border flex items-center justify-center cursor-pointer transition
 			${checked ? "bg-myApp-blueDark border-myApp-blueDark" : "bg-myApp-white border-myApp-blueDark"}
 			`}
 			aria-pressed={checked}
@@ -76,19 +74,40 @@ export default function KpiScoreInput({
 	// qualitative
 	const set = new Set(checkedIds);
 
-	// (ถ้าอยากโชว์สรุปใน view)
+	// view: checkbox
 	if (mode === "view") {
-		const total = criteria.length;
-		const done = criteria.filter((c) => set.has(c.id)).length;
-		const weightSum = criteria.reduce((acc, c) => (set.has(c.id) ? acc + c.weight : acc), 0);
-		return <span>{total === 0 ? "-" : `${done}/${total} (${weightSum}%)`}</span>;
+		if (criteria.length === 0) return <span>-</span>;
+
+		return (
+			<div className="flex flex-wrap justify-center gap-2">
+				{criteria.map((c, idx) => {
+					const checked = set.has(c.id);
+					return (
+					<div key={c.id} className="flex flex-1 gap-1 items-center">
+						<p className="text-myApp-blue text-smallTitle font-medium">{idx + 1}</p>
+			
+						<div
+						title={`ข้อที่ ${idx + 1} (${c.weight}%)`}
+						className={`
+							h-4 w-4 rounded border flex items-center justify-center
+							${checked ? "bg-myApp-blueDark border-myApp-blueDark" : "bg-myApp-white border-myApp-blueDark"}
+						`}
+						aria-hidden
+						>
+							{checked && <FiCheck className="text-myApp-cream text-xs" />}
+						</div>
+					</div>
+					);
+				})}
+			</div>
+		);
 	}
 
 	// edit: checkbox
 	return (
 		<div className="flex flex-wrap justify-center gap-2">
 		{criteria.length === 0 ? (
-			<span className="text-myApp-blueDark">-</span>
+			<span className="text-myApp-blueDark">yyy</span>
 		) : (
 			criteria.map((c, idx) => {
 			const checked = set.has(c.id);
