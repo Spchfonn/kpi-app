@@ -14,13 +14,15 @@ export default function LoginPage() {
   	const [error, setError] = useState<string>("");
 
 	type LoginResponse = {
-		userId: string;
-		employeeId: string;
-		cycle: {
-			id: string;
-			name: string;
-		};
-		availableRoles: string[];
+	userId: string;
+	employeeId?: string;
+	cycle?: {
+		id: string;
+		name: string;
+	};
+	availableRoles?: string[];
+	isAdmin?: boolean;
+	redirectTo?: string;
 	};
 
 	type LoginErrorResponse = {
@@ -28,37 +30,44 @@ export default function LoginPage() {
 	};
 
 	const handleLogin = async () => {
-		if (!cyclePublicId || !email || !password) {
+	if (!email || !password) {
 		setError("กรุณากรอกข้อมูลให้ครบ");
 		return;
-		}
+	}
 
-		try {
+	try {
 		setLoading(true);
 		setError("");
 
 		const res = await fetch("/api/auth/login", {
 			method: "POST",
-			headers: { "Content-Type": "application/json"},
+			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({ cyclePublicId, email, password }),
 		});
 
 		if (!res.ok) {
-			const err: LoginErrorResponse = await res.json();
+			const err = await res.json();
 			setError(err.message ?? "เข้าสู่ระบบไม่สำเร็จ");
 			return;
 		}
 
 		const data: LoginResponse = await res.json();
-
 		localStorage.setItem("user", JSON.stringify(data));
-		
-		router.push("/sign-in/selectRole");
-		} catch (e) {
-		setError("เกิดข้อผิดพลาดจากระบบ");
-		} finally {
-		setLoading(false);
+
+		// 🔥 ADMIN → ไป /admin ทันที
+		if (data.isAdmin && data.redirectTo) {
+			router.push(data.redirectTo);
+			return;
 		}
+
+		// 👤 USER ปกติ
+		router.push("/sign-in/selectRole");
+
+	} catch (e) {
+		setError("เกิดข้อผิดพลาดจากระบบ");
+	} finally {
+		setLoading(false);
+	}
 	};
 
 	return (
