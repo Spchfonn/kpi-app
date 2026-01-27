@@ -14,7 +14,7 @@ type RoleItem = {
 type LoginUser = {
   availableRoles: string[];
   cycle: {
-    id: number;
+    id: string;
     name?: string;
   };
 };
@@ -49,7 +49,7 @@ const page = () => {
 
 	const router = useRouter();
  	const [roles, setRoles] = useState<RoleKey[]>([]);
-	const [cycleId, setCycleId] = useState<number | null>(null);
+	const [cyclePublicId, setCyclePublicId] = useState<string | null>(null);
 
 	useEffect(() => {
 		const raw = localStorage.getItem("user");
@@ -66,7 +66,7 @@ const page = () => {
 			.filter(Boolean);
 
 		setRoles(mappedRoles);
-		setCycleId(user.cycle.id);
+		setCyclePublicId(user.cycle.id);
 	}, [router]);
 
   return (
@@ -100,10 +100,10 @@ const page = () => {
 							<button
 								key={it.key}
 								type="button"
-								disabled={!cycleId}
+								disabled={!cyclePublicId}
 								onClick={() => {
 									localStorage.setItem("selectedRole", it.key);
-									router.push(`/${cycleId}/${ROLE_ROUTE[it.key]}/defineKpi`);
+									router.push(`/${cyclePublicId}/${ROLE_ROUTE[it.key]}/defineKpi`);
 								}}
                         className="w-35 h-36 rounded-2xl flex flex-col items-center justify-center gap-2 shadow-sm
                               bg-myApp-white hover:bg-myApp-shadow/30"

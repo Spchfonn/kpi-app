@@ -63,7 +63,7 @@ export async function POST(req: Request) {
     userId: user.id,
     employeeId: user.employeeId,fullName,
     cycle: {
-      id: cycle.id,
+      id: cycle.publicId,
       name: cycle.name,
     },
     availableRoles: Array.from(roles),
