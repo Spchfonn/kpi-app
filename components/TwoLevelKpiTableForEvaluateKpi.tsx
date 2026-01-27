@@ -42,6 +42,7 @@ export type KpiTreeNode = {
 	weightPercent: number;
   
 	typeId?: string | null;
+	type?: { id: string; type: "QUANTITATIVE"|"QUALITATIVE"|"CUSTOM"; name: string; rubric?: any } | null;
 	unit?: string | null;
 	startDate?: string | null;
 	endDate?: string | null;
@@ -56,14 +57,13 @@ export type EvalScoreState = {
 	score: number | "";
 	checkedIds?: string[];
 };
-  
+
 type Props = {
 	mode: "view" | "edit";
 	readOnlyDetails?: boolean;
 	showAllDetails: boolean;
   
 	tree: KpiTreeNode[];
-	kpiTypes: { id: string; type: "QUANTITATIVE"|"QUALITATIVE"|"CUSTOM"; name: string; rubric?: any }[];
   
 	scores: Record<string, EvalScoreState>; // key = nodeKey(item)
 	onChangeScores: React.Dispatch<React.SetStateAction<Record<string, EvalScoreState>>>;
@@ -81,7 +81,6 @@ export default function TwoLevelKpiTableForEvaluateKpi({
 	readOnlyDetails = true,
 	showAllDetails,
 	tree,
-	kpiTypes,
 	scores,
 	onChangeScores
   }: Props) {
@@ -93,12 +92,6 @@ export default function TwoLevelKpiTableForEvaluateKpi({
 	const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 	const isExpanded = (key: string) => expanded[key] ?? true;
 
-	const typeById = useMemo(() => {
-		const m = new Map<string, (typeof kpiTypes)[number]>();
-		kpiTypes.forEach((t) => m.set(t.id, t));
-		return m;
-	}, [kpiTypes]);
-
 	const toggleExpand = (parentKey: string) => {
 		setExpanded((prev) => ({ ...prev, [parentKey]: !isExpanded(parentKey) }));
 	};
@@ -106,12 +99,12 @@ export default function TwoLevelKpiTableForEvaluateKpi({
 	const setItemScore = (itemKey: string, patch: Partial<EvalScoreState>) => {
 		onChangeScores((prev) => ({
 			...prev,
-			[itemKey]: { scores: "", checkedIds: [], ...(prev[itemKey] ?? {}), ...patch },
+			[itemKey]: { ...(prev[itemKey] ?? { score: "", checkedIds: [] }), ...patch },
 		}));
 	};
 
-	const renderRubric = (c: KpiTreeNode) => {
-		const rubric = (c as any).type?.rubric;
+	const renderRubric = (t?: any) => {
+		const rubric = t?.rubric;
 		if (!rubric) return null;
 		
 		switch (rubric.kind) {
@@ -205,9 +198,18 @@ export default function TwoLevelKpiTableForEvaluateKpi({
 								<div className="mt-2 space-y-2">
 									{p.children.map((c) => {
 										const cKey = nodeKey(c);
-										const t = c.typeId ? typeById.get(c.typeId) : undefined;
+										const t = c.type ?? null;
+										const detailsTypeId = t?.id ?? c.typeId ?? null;
+										const detailsTypes = t ? [{ id: t.id, type: t.type, name: t.name }] : [];
 										const legacyType = toLegacyKpiType(t?.type ?? null);
 										const s = scores[cKey] ?? { score: "", checkedIds: [] };
+
+										const criteria = t?.rubric?.kind === "QUALITATIVE_CHECKLIST"
+														? t.rubric.checklist.map((x: any, i: number) => ({
+															id: String(i + 1),
+															weight: Number(x.weight_percent ?? 0),
+														}))
+														: [];
 
 										return (
 											<div key={cKey} className="bg-myApp-white rounded-xl shadow-sm px-4 py-3 ml-10">
@@ -223,19 +225,15 @@ export default function TwoLevelKpiTableForEvaluateKpi({
 													</div>
 
 													<div className="flex items-center justify-center text-myApp-blueDark">
-														{mode === "edit" ? (
-															<KpiScoreInput
-																mode={mode}
-																kpiType={legacyType}
-																score={s.score}
-																criteria={undefined}
-																checkedIds={s.checkedIds ?? []}
-																onScoreChange={(next) => setItemScore(cKey, { score: next })}
-																onCheckedIdsChange={(next) => setItemScore(cKey, { checkedIds: next })}
-															/>
-															) : (
-															<span>{s.score === "" ? "-" : s.score}</span>
-														)}
+														<KpiScoreInput
+															mode={mode}
+															kpiType={legacyType}
+															score={s.score}
+															criteria={criteria}
+															checkedIds={s.checkedIds ?? []}
+															onScoreChange={(next) => setItemScore(cKey, { score: next })}
+															onCheckedIdsChange={(next) => setItemScore(cKey, { checkedIds: next })}
+														/>
 													</div>
 
 													<div className="flex items-center justify-center text-myApp-blueDark">
@@ -247,9 +245,9 @@ export default function TwoLevelKpiTableForEvaluateKpi({
 													<div className="flex flex-col mt-2 rounded-xl px-4 gap-1.5">
 														<KpiDetailsBar
 															mode={detailsMode}
-															typeId={c.typeId ?? null}
+															typeId={detailsTypeId}
 															onTypeIdChange={() => {}}
-															kpiTypes={kpiTypes}
+															kpiTypes={detailsTypes}
 															unit={c.unit ?? ""}
 															onUnitChange={() => {}}
 															startDate={c.startDate ?? ""}
@@ -257,7 +255,7 @@ export default function TwoLevelKpiTableForEvaluateKpi({
 															endDate={c.endDate ?? ""}
 															onEndDateChange={() => {}}
 														/>
-														{renderRubric(c)}
+														{renderRubric(t)}
 													</div>
 												)}
 											</div>
