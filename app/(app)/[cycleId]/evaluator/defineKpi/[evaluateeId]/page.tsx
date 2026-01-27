@@ -40,6 +40,14 @@ type Node = {
 	type?: KpiType | null;
 };
 
+type AiMeasurement = {
+  kpi_code: string;
+  measurement?: {
+    unit?: string;
+  };
+  scoring?: { condition: number; score: number }[];
+  checklist?: { item: string; weight_percent: number }[];
+};
 //
 // helper
 //
@@ -108,6 +116,35 @@ function assignDisplayNo(tree: Node[]): Node[] {
       })),
     };
   });
+}
+
+function measurementToRubric(m: any): any | null {
+  if (!m) return null;
+
+  // ✅ quantitative
+  if (m.scoring && m.scoring.length > 0) {
+    return {
+      kind: "QUANTITATIVE_1_TO_5",
+      levels: m.scoring.map((s: any) => ({
+        unit: m.measurement?.unit ?? null,
+        score: s.score,
+        value: s.condition,
+      })),
+    };
+  }
+
+  // ✅ qualitative (checklist)
+  if (m.checklist && m.checklist.length > 0) {
+    return {
+      kind: "QUALITATIVE_CHECKLIST",
+      checklist: m.checklist.map((c: any) => ({
+        item: c.item,
+        weight_percent: c.weight_percent,
+      })),
+    };
+  }
+
+  return null;
 }
 
 const page = () => {
@@ -270,29 +307,48 @@ const page = () => {
 		const j = await res.json();
 		if (!j.success) throw new Error(j.error ?? "AI generate failed");
 
+		const measurementByCode = new Map<string, AiMeasurement>(
+			j.measurements.kpi_measurements.map((m: AiMeasurement) => [
+			m.kpi_code,
+			m,
+			])
+		);
 		// map kpi_type -> typeId
 		const typeMap = new Map(
 			types.map((t) => [t.type.toLowerCase(), t.id])
 		);
 
 		const aiNodes: Node[] = j.round1_raw.level1_groups.map(
-			(group: any) => ({
+		(group: any) => ({
 			nodeType: "GROUP",
 			title: group.group_title,
 			description: group.group_goal,
 			weightPercent: group.group_percent,
-			children: group.level2_kpis.map((kpi: any) => ({
+			children: group.level2_kpis.map((kpi: any) => {
+				const measurement = measurementByCode.get(kpi.kpi_code);
+				const rubric = measurementToRubric(measurement);
+
+				return {
 				nodeType: "ITEM",
 				title: kpi.title,
 				description: kpi.description,
 				weightPercent: kpi.kpi_percent,
 				typeId: typeMap.get(kpi.kpi_type.toLowerCase()) ?? null,
-				unit: null,
+				unit: measurement?.measurement?.unit ?? null,
 				startDate: cycleStartIso,
 				endDate: cycleEndIso,
 				children: [],
-			})),
-			})
+				type: rubric
+					? {
+						id: typeMap.get(kpi.kpi_type.toLowerCase())!,
+						type: kpi.kpi_type.toUpperCase(),
+						name: kpi.kpi_type,
+						rubric,
+						}
+					: null,
+				};
+			}),
+		})
 		);
 
 		// 👉 ใส่ displayNo ชั่วคราว
@@ -300,11 +356,12 @@ const page = () => {
 
 		// 👉 แสดงทันที (ยังไม่ save)
 		setAiTree(withDisplayNo);
-	} catch (e: any) {
-		console.error(e);
-		setError(e.message ?? "ไม่สามารถสร้าง KPI จาก AI ได้");
-	} finally {
-		setSaving(false);
+		} catch (e: any) {
+			console.error(e);
+			setError(e.message ?? "ไม่สามารถสร้าง KPI จาก AI ได้");
+		} finally {
+			setSaving(false);
+		}
 	}
 	const goCopyKpi = () => {
 		router.push(
@@ -430,7 +487,6 @@ const page = () => {
 		</div>
 	</>
   )
-}
 }
 
 export default page

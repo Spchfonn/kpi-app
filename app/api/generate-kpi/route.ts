@@ -210,7 +210,7 @@ schema (ต้องใช้ key ตามนี้เท่านั้น):
 - score ใช้ได้เฉพาะตัวเลข 1, 2, 3, 4, 5 เท่านั้น
 - ห้ามเว้น scoring ว่าง
 - ห้ามใช้ระบบคะแนนแบบอื่น
-- metric_name และ definition ต้องเป็นภาษาไทย
+- title, definition และ unit ต้องเป็นภาษาไทย
 
 ข้อกำหนดเพิ่มเติม
 - frequency ต้องสอดคล้องกับ timeframe ของ KPI (weekly / monthly / quarterly)
