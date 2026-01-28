@@ -71,6 +71,9 @@ enum NotificationType {
 
   // 7. evaluator ปฏิเสธ KPI ที่ evaluatee กำหนดเอง
   EVALUATOR_REJECT_EVALUATEE_KPI
+
+  // 8. evaluator ยกเลิกการขอให้รับรอง KPI
+  EVALUATOR_CANCEL_REQUEST_EVALUATEE_CONFIRM_KPI
 }
 
 /////////////////////// kpi model
@@ -172,6 +175,8 @@ model User {
   updatedAt   DateTime  @updatedAt
 
   notifications NotificationRecipient[]
+
+  @@map("user")
 }
 
 model Employee {
@@ -301,6 +306,8 @@ model KpiPlan {
   status  PlanStatus @default(DRAFT)
 
   nodes KpiNode[]
+
+  confirmRequestedAt DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
