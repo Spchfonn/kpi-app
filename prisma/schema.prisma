@@ -50,7 +50,33 @@ enum PrefixName {
   MS
 }
 
-/////////////////////// define model
+enum NotificationType {
+  // 1. evaluatee → ขอ evaluator อนุมัติ KPI ที่ evaluatee ตั้งเอง
+  EVALUATEE_REQUEST_EVALUATOR_APPROVE_KPI
+
+  // 2. evaluatee รับรอง KPI ที่ evaluator ตั้งให้
+  EVALUATEE_CONFIRM_EVALUATOR_KPI
+
+  // 3. evaluatee ปฏิเสธ KPI ที่ evaluator ตั้งให้
+  EVALUATEE_REJECT_EVALUATOR_KPI
+
+  // 4. evaluator → ขอ evaluatee รับรอง KPI ที่ evaluator ตั้งให้
+  EVALUATOR_REQUEST_EVALUATEE_CONFIRM_KPI
+
+  // 5. evaluator → สั่งให้ evaluatee กำหนด KPI เอง
+  EVALUATOR_REQUEST_EVALUATEE_DEFINE_KPI
+
+  // 6. evaluator อนุมัติ KPI ที่ evaluatee กำหนดเอง
+  EVALUATOR_APPROVE_EVALUATEE_KPI
+
+  // 7. evaluator ปฏิเสธ KPI ที่ evaluatee กำหนดเอง
+  EVALUATOR_REJECT_EVALUATEE_KPI
+
+  // 8. evaluator ยกเลิกการขอให้รับรอง KPI
+  EVALUATOR_CANCEL_REQUEST_EVALUATEE_CONFIRM_KPI
+}
+
+/////////////////////// kpi model
 
 // EvaluationCycle
 //   └── EvaluationAssignment (evaluatee + evaluator + weight)
@@ -142,9 +168,15 @@ model User {
   employeeId String?   @unique
   employee   Employee? @relation(fields: [employeeId], references: [id])
 
+  sessions Session[]
+
   lastLoginAt DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+
+  notifications NotificationRecipient[]
+
+  @@map("user")
 }
 
 model Employee {
@@ -188,6 +220,8 @@ model Employee {
 
   evaluatorAssignments EvaluationAssignment[] @relation("Evaluator")
   evaluateeAssignments EvaluationAssignment[] @relation("Evaluatee")
+
+  actedNotifications Notification[] @relation("NotificationActor")
 
   @@index([organizationId])
   // @@index([jobTitleId])
@@ -273,6 +307,8 @@ model KpiPlan {
 
   nodes KpiNode[]
 
+  confirmRequestedAt DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -336,4 +372,49 @@ model KpiSubmission {
 
   @@unique([nodeId, version])
   @@index([nodeId, createdAt])
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  type      NotificationType
+
+  actorId   String?
+  actor     Employee? @relation("NotificationActor", fields: [actorId], references: [id])
+
+  cycleId   Int?
+  meta      Json?   // for store assignmentId/planId/nodeId
+
+  createdAt DateTime @default(now())
+
+  recipients NotificationRecipient[]
+
+  @@index([type])
+  @@index([createdAt])
+}
+
+model NotificationRecipient {
+  id             String       @id @default(uuid())
+  notificationId String
+  notification   Notification @relation(fields: [notificationId], references: [id])
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  readAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@unique([notificationId, userId])
+  @@index([userId, readAt])
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
 }

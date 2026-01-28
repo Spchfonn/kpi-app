@@ -1,0 +1,1 @@
+-- baseline: align migration history with existing database
