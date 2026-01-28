@@ -5,6 +5,10 @@ export type KpiType = "quantitative" | "qualitative" | "custom" | null;
 
 type ChecklistCriterion = { id: string; weight: number };
 
+type QuantLevel = { unit: string; score: number; value: number };
+type QuantScale = { kind: "QUANTITATIVE_1_TO_5"; levels: QuantLevel[] }
+  				| { kind: string; levels: QuantLevel[] }; // เผื่ออนาคต
+
 function CheckBox({
 	checked,
 	onChange,
@@ -30,12 +34,29 @@ function CheckBox({
 	);
 }
 
+function getRequirementText(score: number | "", scale?: QuantScale) {
+	if (score === "" || !scale?.levels?.length) return "-";
+  
+	const levels = [...scale.levels].sort((a, b) => a.score - b.score);
+	const cur = levels.find((l) => l.score === score);
+	if (!cur) return "-";
+  
+	const first = levels[0];
+	const last = levels[levels.length - 1];
+	const lowerIsBetter = last.value < first.value;
+  
+	const op = lowerIsBetter ? "ไม่เกิน" : "ไม่น้อยกว่า";
+  
+	return `ต้องทำได้${op} ${cur.value} ${cur.unit}`;
+}
+
 export default function KpiScoreInput({
 	mode,
 	kpiType,
 	score,
 	criteria = [],
 	checkedIds = [],
+	scale,
 	onScoreChange,
 	onCheckedIdsChange,
 }: {
@@ -44,30 +65,44 @@ export default function KpiScoreInput({
 	score: number | "";
 	criteria?: ChecklistCriterion[];
 	checkedIds?: string[];
+	scale?: QuantScale;
 	onScoreChange: (next: number | "") => void;
 	onCheckedIdsChange?: (next: string[]) => void;
 }) {
 	if (kpiType !== "qualitative") {
 		// quantitative/custom
+		const requirementText = getRequirementText(score, scale);
+	
 		return mode === "edit" ? (
-		<input
-			type="number"
-			min={0}
-			max={5}
-			step={1}
-			className="w-full bg-transparent outline-none text-center"
-			value={score}
-			onChange={(e) => {
-				const v = e.target.value;
-				if (v === "") return onScoreChange("");
-				const n = Number(v);
-				if (!Number.isFinite(n)) return;
-				onScoreChange(Math.max(0, Math.min(5, Math.round(n))));
-			}}
-			placeholder="-"
-		/>
+			<div className="text-center">
+				<input
+					type="number"
+					min={0}
+					max={5}
+					step={1}
+					className="w-full bg-transparent outline-none text-center"
+					value={score}
+					onChange={(e) => {
+						const v = e.target.value;
+						if (v === "") return onScoreChange("");
+						const n = Number(v);
+						if (!Number.isFinite(n)) return;
+						onScoreChange(Math.max(0, Math.min(5, Math.round(n))));
+					}}
+					placeholder="-"
+				/>
+				<p className="text-center items-center text-smallBody text-myApp-blue">
+					{requirementText}
+				</p>
+			</div>
 		) : (
-		<span>{score === "" ? "-" : score}</span>
+			<div className="text-center">
+				<span>{score === "" ? "-" : score}</span>
+				<p className="text-center items-center text-smallBody text-myApp-blue">
+					{requirementText}
+				</p>
+			</div>
+		
 		);
 	}
 

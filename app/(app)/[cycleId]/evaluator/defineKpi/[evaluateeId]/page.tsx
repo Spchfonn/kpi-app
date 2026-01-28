@@ -201,6 +201,7 @@ const page = () => {
 	const startEdit = () => {
 		setDraftTree(tree);
 		setMode("edit");
+		setShowAllDetails(true);
 	};
 
 	const cancelEdit = () => {
@@ -285,17 +286,23 @@ const page = () => {
 					<p className='text-button font-semibold text-myApp-blueDark'>สถานะการกำหนดตัวชี้วัด</p>
 					<p className='text-button font-semibold text-myApp-red'>ยังไม่กำหนด</p>
 				</div>
-				<KpiLevelBox level={2} />
+				<p className="text-center text-body font-medium text-myApp-blueDark">
+					รูปแบบการกำหนดตัวชี้วัด : 2 ระดับ
+				</p>
 			</div>
 
 			{/* menu tab */}
 			<div className='flex items-center mb-3 gap-2.5'>
-				<Button 
+				{mode === "view" && (
+					<Button 
 					variant={showAllDetails ? "outline" : "primary"}
 					primaryColor="blueDark"
-					onClick={() => setShowAllDetails((prev) => !prev)}>
-					{showAllDetails ? "ซ่อนเกณฑ์คะแนน" : "แสดงเกณฑ์คะแนน"}
-				</Button>
+					onClick={() => setShowAllDetails((prev) => !prev)}
+					>
+						{showAllDetails ? "ซ่อนเกณฑ์คะแนน" : "แสดงเกณฑ์คะแนน"}
+					</Button>
+				)}
+				
 
 				<Button
 					variant="primary"

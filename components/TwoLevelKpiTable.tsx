@@ -29,6 +29,7 @@ export type KpiTreeNode = {
 	unit?: string | null;
 	startDate?: string | null;
 	endDate?: string | null;
+	rubricDraft?: Rubric | null;
   
 	children: KpiTreeNode[];
 	displayNo?: string;
@@ -51,6 +52,34 @@ function CheckBox({ checked, onChange }: { checked: boolean; onChange: (v: boole
 	);
 }
 
+function emptyRubricForType(t: "QUANTITATIVE" | "QUALITATIVE" | "CUSTOM"): Rubric {
+	if (t === "QUANTITATIVE") {
+		return {
+			kind: "QUANTITATIVE_1_TO_5",
+			levels: [
+			{ unit: null, score: 1, value: 0 },
+			{ unit: null, score: 2, value: 0 },
+			{ unit: null, score: 3, value: 0 },
+			{ unit: null, score: 4, value: 0 },
+			{ unit: null, score: 5, value: 0 },
+			],
+		};
+	}
+	if (t === "QUALITATIVE") {
+	  	return { kind: "QUALITATIVE_CHECKLIST", checklist: [] };
+	}
+	return {
+		kind: "CUSTOM_DESCRIPTION_1_TO_5",
+		levels: [
+			{ score: 1, desc: "" },
+			{ score: 2, desc: "" },
+			{ score: 3, desc: "" },
+			{ score: 4, desc: "" },
+			{ score: 5, desc: "" },
+		],
+	};
+}
+
 type Props = {
 	mode: "view" | "edit";
 	showAllDetails: boolean;
@@ -59,7 +88,7 @@ type Props = {
 	tree: KpiTreeNode[];
 	onChangeTree: React.Dispatch<React.SetStateAction<KpiTreeNode[]>>;
 
-	kpiTypes: { id: string; type: "QUANTITATIVE"|"QUALITATIVE"|"CUSTOM"; name: string }[];
+	kpiTypes: { id: string; type: "QUANTITATIVE"|"QUALITATIVE"|"CUSTOM"; name: string; rubric: Rubric }[];
 	defaultStartDate: string;
 	defaultEndDate: string;
 
@@ -143,8 +172,8 @@ export default function TwoLevelKpiTable({
 	};
 
 	const colClass = mode === "edit"
-		? "grid grid-cols-[1fr_100px_110px_48px] items-center"
-		: "grid grid-cols-[1fr_100px_110px] items-center";
+		? "grid grid-cols-[1fr_100px_48px] items-center"
+		: "grid grid-cols-[1fr_100px] items-center";
 
 	const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 	const isExpanded = (key: string) => expanded[key] ?? true;
@@ -166,6 +195,17 @@ export default function TwoLevelKpiTable({
 		]);
 	};
 
+	const defaultQuant = kpiTypes.find(t => t.type === "QUANTITATIVE") ?? kpiTypes[0];
+	const defaultTypeId = defaultQuant?.id ?? null;
+	const defaultTypeKind = defaultQuant?.type ?? "QUANTITATIVE";
+
+	const kpiTypeMap = useMemo(
+		() => new Map(kpiTypes.map((t) => [t.id, t])),
+		[kpiTypes]
+	);
+	  
+	const fallbackQuantId = kpiTypes.find((t) => t.type === "QUANTITATIVE")?.id ?? null;
+
 	const addChild = (parentKey: string) => {
 		setRows((prev) =>
 			prev.map((p) => {
@@ -177,7 +217,8 @@ export default function TwoLevelKpiTable({
 					weightPercent: 0,
 					startDate: defaultStartDate,
         			endDate: defaultEndDate,
-					typeId: kpiTypes[0]?.id ?? null,
+					typeId: defaultTypeId,
+					rubricDraft: emptyRubricForType(defaultTypeKind),
 					unit: null,
 					children: [],
 				};
@@ -277,41 +318,31 @@ export default function TwoLevelKpiTable({
 	};
 
 	const renderRubric = (c: KpiTreeNode) => {
-		const rubric = c.type?.rubric;
+		const fromDraft = c.rubricDraft;
+
+		// fallback: from server/type definition
+		const fromType =
+			c.type?.rubric ??
+			(c.typeId ? kpiTypeMap.get(c.typeId)?.rubric : null);
+	  
+		const rubric = fromDraft ?? fromType;
 		if (!rubric) return null;
 	  
 		switch (rubric.kind) {
-		  case "QUANTITATIVE_1_TO_5":
-			return (
-				<ScoreBoxForQuantitativeKpi
-					mode={mode}
-					levels={rubric.levels}
-				/>
-			);
-	  
-		  case "QUALITATIVE_CHECKLIST":
-			return (
+			case "QUANTITATIVE_1_TO_5":
+				return <ScoreBoxForQuantitativeKpi mode={mode} levels={rubric.levels} />;
+			case "QUALITATIVE_CHECKLIST":
+				return (
 				<ScoreBoxForQualitativeKpi
 					mode={mode}
-					items={rubric.checklist.map((x: any, i: number) => ({
-						id: i + 1,
-						title: x.item,
-						weight: x.weight_percent,
-					}))}
+					items={rubric.checklist.map((x, i) => ({ id: i + 1, title: x.item, weight: x.weight_percent }))}
 					onChange={() => {}}
 				/>
-			);
-	  
-		  case "CUSTOM_DESCRIPTION_1_TO_5":
-			return (
-				<ScoreBoxForCustomKpi
-					mode={mode}
-					levels={rubric.levels}
-				/>
-			);
-	  
-		  default:
-			return null;
+				);
+			case "CUSTOM_DESCRIPTION_1_TO_5":
+				return <ScoreBoxForCustomKpi mode={mode} levels={rubric.levels} />;
+			default:
+				return null;
 		}
 	};
 
@@ -321,10 +352,9 @@ export default function TwoLevelKpiTable({
 		<div className="sticky top-0 z-20 bg-myApp-cream">
 			<div className="bg-myApp-blue rounded-3xl shadow-sm px-4 py-4 text-myApp-cream text-button font-semibold">
 				<div className={`${colClass} place-items-center`}>
-				<div>ตัวชี้วัด</div>
-				<div>ค่าน้ำหนัก</div>
-				<div>ความสัมพันธ์</div>
-				{mode === "edit" && <div />}
+					<div>ตัวชี้วัด</div>
+					<div>ค่าน้ำหนัก</div>
+					{mode === "edit" && <div />}
 				</div>
 			</div>
 		</div>
@@ -386,18 +416,6 @@ export default function TwoLevelKpiTable({
 									) : (
 										<span className="text-body font-medium">{p.weightPercent}%</span>
 									)}
-								</div>
-
-								<div className="flex items-center justify-center text-myApp-blueDark">
-									{/* {mode === "edit" ? (
-										<input
-										className="w-full bg-transparent outline-none text-center"
-										value={p.relation}
-										onChange={(e) => updateParent(pKey, { relation: e.target.value })}
-										/>
-									) : (
-										<span>{p.relation}</span>
-									)} */}
 								</div>
 
 								{/* actions */}
@@ -479,18 +497,6 @@ export default function TwoLevelKpiTable({
 													)}
 												</div>
 
-												<div className="flex items-center justify-center text-myApp-blueDark">
-													{/* {mode === "edit" ? (
-													<input
-														className="w-full bg-transparent outline-none text-center"
-														value={c.relation}
-														onChange={(e) => updateChild(pKey, cKey, { relation: e.target.value })}
-													/>
-													) : (
-													<span>{c.relation}</span>
-													)} */}
-												</div>
-
 												<div className="flex items-center justify-end text-myApp-grey">
 													{mode === "edit" && (
 													<>
@@ -519,12 +525,19 @@ export default function TwoLevelKpiTable({
 												</div>
 											</div>
 
-											{showAllDetails && (
+											{(mode === "edit" || showAllDetails) && (
 												<div className="flex flex-col mt-2 rounded-xl px-4 gap-1.5">
 													<KpiDetailsBar
 														mode={mode}
 														typeId={c.typeId ?? null}
-														onTypeIdChange={(id) => updateChild(pKey, cKey, { typeId: id })}
+														onTypeIdChange={(id) => {
+															const t = kpiTypes.find(x => x.id === id);
+															const kind = t?.type ?? "QUANTITATIVE";
+															updateChild(pKey, cKey, {
+																typeId: id,
+																rubricDraft: emptyRubricForType(kind),
+															});
+														}}
 														kpiTypes={kpiTypes}
 														unit={c.unit ?? ""}
 														onUnitChange={(v) => updateChild(pKey, cKey, { unit: v || null })}
