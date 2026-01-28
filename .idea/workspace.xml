@@ -6,8 +6,10 @@
   <component name="ChangeListManager">
     <list default="true" id="efa7c69f-6049-41ab-9563-086e6e42c610" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/components/EvaluateeCardForDefineKpi.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/EvaluateeCardForDefineKpi.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/components/EvaluateeCardForEvaluateKpi.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/EvaluateeCardForEvaluateKpi.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(app)/[cycleId]/evaluator/defineKpi/[evaluateeId]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(app)/[cycleId]/evaluator/defineKpi/[evaluateeId]/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/TwoLevelKpiTable.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/TwoLevelKpiTable.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/TwoLevelKpiTableForEvaluateKpi.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/TwoLevelKpiTableForEvaluateKpi.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/user/KpiScoreInput.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/user/KpiScoreInput.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -30,7 +32,8 @@
     "ModuleVcsDetector.initialDetectionPerformed": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "frontend-evaluateKpi",
+    "database.data.extractors.current.export.id": "SQL Inserts",
+    "git-widget-placeholder": "frontend-fixBug",
     "last_opened_file_path": "/Users/fonspch"
   },
   "keyToStringList": {

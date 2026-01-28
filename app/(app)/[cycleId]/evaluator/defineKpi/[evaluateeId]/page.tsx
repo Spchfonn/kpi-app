@@ -162,6 +162,8 @@ const page = () => {
 	const [saving, setSaving] = useState(false);
 	const [error, setError] = useState<string>("");
 
+	const [pendingConfirm, setPendingConfirm] = useState(false);
+
 	const [planId, setPlanId] = useState<string | null>(null);
 	const [types, setTypes] = useState<KpiType[]>([]);
 	const [tree, setTree] = useState<Node[]>([]);
@@ -172,11 +174,9 @@ const page = () => {
 	// for confirm delete
 	const [confirmOpenDelete, setConfirmOpenDelete] = useState(false);
 
-	const typeById = useMemo(() => {
-		const m = new Map<string, KpiType>();
-		types.forEach((t) => m.set(t.id, t));
-		return m;
-	}, [types]);
+	// for confirm send noti
+	const [confirmOpenConfirm, setConfirmOpenConfirm] = useState(false);
+	const [confirmOpenCancel, setConfirmOpenCancel] = useState(false);
 
 	const [cycleStartIso, setCycleStartIso] = useState<string>("");
 	const [cycleEndIso, setCycleEndIso] = useState<string>("");
@@ -241,6 +241,7 @@ const page = () => {
 		
 				setTree(loadedTree);
 				setDraftTree(loadedTree); // initial draft
+				setPendingConfirm(!!jPlan.data.confirmRequestedAt);
 			} catch (e: any) {
 				console.error(e);
 				setError(e?.message ?? "โหลดข้อมูลไม่สำเร็จ");
@@ -254,6 +255,7 @@ const page = () => {
 	const startEdit = () => {
 		setDraftTree(tree);
 		setMode("edit");
+		setShowAllDetails(true);
 	};
 
 	const cancelEdit = () => {
@@ -369,6 +371,29 @@ const page = () => {
 		);
 	};
 
+	const requestConfirm = async () => {
+		if (!planId) return;
+	  
+		setSaving(true);
+		setError("");
+	  
+		try {
+			const endpoint = pendingConfirm
+				? `/api/kpiPlans/${planId}/cancelRequestConfirm`
+				: `/api/kpiPlans/${planId}/requestConfirm`;
+		
+			const res = await fetch(endpoint, { method: "POST" });
+			const j = await res.json();
+			if (!j.ok) throw new Error(j.message ?? "ทำรายการไม่สำเร็จ");
+		
+			setPendingConfirm(!pendingConfirm);
+		} catch (e: any) {
+		  	setError(e?.message ?? "ทำรายการไม่สำเร็จ");
+		} finally {
+		  	setSaving(false);
+		}
+	};
+
 	if (loading) {
 		return <div className="px-20 py-7.5">Loading...</div>;
 	}
@@ -384,17 +409,23 @@ const page = () => {
 					<p className='text-button font-semibold text-myApp-blueDark'>สถานะการกำหนดตัวชี้วัด</p>
 					<p className='text-button font-semibold text-myApp-red'>ยังไม่กำหนด</p>
 				</div>
-				<KpiLevelBox level={2} />
+				<p className="text-center text-body font-medium text-myApp-blueDark">
+					รูปแบบการกำหนดตัวชี้วัด : 2 ระดับ
+				</p>
 			</div>
 
 			{/* menu tab */}
 			<div className='flex items-center mb-3 gap-2.5'>
-				<Button 
+				{mode === "view" && (
+					<Button 
 					variant={showAllDetails ? "outline" : "primary"}
 					primaryColor="blueDark"
-					onClick={() => setShowAllDetails((prev) => !prev)}>
-					{showAllDetails ? "ซ่อนเกณฑ์คะแนน" : "แสดงเกณฑ์คะแนน"}
-				</Button>
+					onClick={() => setShowAllDetails((prev) => !prev)}
+					>
+						{showAllDetails ? "ซ่อนเกณฑ์คะแนน" : "แสดงเกณฑ์คะแนน"}
+					</Button>
+				)}
+				
 
 				<Button
 					variant="primary"
@@ -417,7 +448,18 @@ const page = () => {
 					if in 'edit' mode, show save and cancel button */}
 					{mode === "view" ? (
 						<>
-						<Button variant="primary" primaryColor="green">ขอให้รับรองตัวชี้วัด</Button>
+						<Button 
+							variant={pendingConfirm ? "outline" : "primary"}
+							primaryColor="green"
+							onClick={() => {
+								if (saving) return;
+								if (pendingConfirm) setConfirmOpenCancel(true);
+								else setConfirmOpenConfirm(true);
+							}}
+							disabled={saving}
+						>
+							{pendingConfirm ? "ยกเลิกการขอให้รับรองตัวชี้วัด" : "ขอให้รับรองตัวชี้วัด"}
+						</Button>
 						<Button onClick={startEdit} variant="primary" primaryColor="orange">แก้ไข</Button>
 						</>
 					) : (
@@ -484,6 +526,32 @@ const page = () => {
 					</Button>
 				</div>
 			)}
+
+			{/* confirm for send confirm kpi noti */}
+			<ConfirmBox
+				open={confirmOpenConfirm}
+				message={`ต้องการขอให้ ${evaluateeName} รับรองตัวชี้วัดใช่หรือไม่?`}
+				cancelText="ยกเลิก"
+				confirmText="ตกลง"
+				onCancel={() => setConfirmOpenConfirm(false)}
+        		onConfirm={async () => {
+					setConfirmOpenConfirm(false);
+					await requestConfirm();
+				}}
+			/>
+
+			{/* confirm for send cancel confirm kpi noti */}
+			<ConfirmBox
+				open={confirmOpenCancel}
+				message={`ต้องการยกเลิกการขอให้ ${evaluateeName} รับรองตัวชี้วัดใช่หรือไม่?`}
+				cancelText="ยกเลิก"
+				confirmText="ตกลง"
+				onCancel={() => setConfirmOpenCancel(false)}
+				onConfirm={async () => {
+					setConfirmOpenCancel(false);
+					await requestConfirm();
+				}}
+			/>
 		</div>
 	</>
   )

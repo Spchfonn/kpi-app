@@ -1,45 +1,86 @@
 "use client";
 import DefinedStatus from '@/components/DefinedStatus';
 import EvaluateeCardForEvaluateKpi from '@/components/EvaluateeCardForEvaluateKpi';
-import React, { useState } from 'react'
+import { useRouter } from 'next/navigation';
+import React, { useEffect, useState } from 'react'
+
+type LoginUser = {
+	employeeId: string;
+	cycle: { id: string; name: string }; // cyclePublicId
+};
+  
+function getLoginUser(): LoginUser | null {
+	try {
+		const raw = localStorage.getItem("user");
+		if (!raw) return null;
+		return JSON.parse(raw);
+	} catch {
+	  	return null;
+	}
+}
+
+type Item = {
+	assignmentId: string;
+	currentPlanId: string | null;
+	weightPercent: string;
+	evaluatee: {
+		id: string;
+		fullName: string;
+		title: string;
+		organization: string;
+	};
+};
 
 export default function Page({ params }: { params: { id: string } })  {
-    return (
-    <>
-        <div className='px-20 py-7.5'>
-            <div className='flex items-center mb-3'>
-                <p className='text-title font-medium text-myApp-blueDark'>ผู้รับการประเมิน (4)</p>
-                <div className='ml-auto flex'>
-                    <DefinedStatus/>
-                </div>
-            </div>
 
-            <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
-                <EvaluateeCardForEvaluateKpi
-                    id="01"
-                    name="นางสาวรักงาน สู้ชีวิต"
-                    title="Software Engineer Level 3"
-                />
-                <EvaluateeCardForEvaluateKpi
-                    id="02"
-                    name="นางสาวรักงาน สู้ชีวิต"
-                    title="Software Engineer Level 3"
-                    stripColor="yellow"
-                />
-                <EvaluateeCardForEvaluateKpi
-                    id="03"
-                    name="นางสาวรักงาน สู้ชีวิต"
-                    title="Software Engineer Level 3"
-                    stripColor="yellow"
-                />
-                <EvaluateeCardForEvaluateKpi
-                    id="04"
-                    name="นางสาวรักงาน สู้ชีวิต"
-                    title="Software Engineer Level 3"
-                    stripColor="green"
-                />
-            </div>
-        </div>
-    </>
+	const router = useRouter();
+	const [items, setItems] = useState<Item[]>([]);
+	const [loading, setLoading] = useState(true);
+
+	useEffect(() => {
+		(async () => {
+			const u = getLoginUser();
+			if (!u?.employeeId || !u?.cycle?.id) {
+				router.push("/sign-in");
+				return;
+			}
+		
+			setLoading(true);
+			const res = await fetch(
+				`/api/evaluationAssignments/evaluatees?cyclePublicId=${encodeURIComponent(
+				u.cycle.id
+				)}&evaluatorId=${encodeURIComponent(u.employeeId)}`,
+				{ cache: "no-store" }
+			);
+		
+			const j = await res.json();
+			if (j.ok) setItems(j.data.items ?? []);
+			setLoading(false);
+		})();
+	}, [router]);
+
+	return (
+	<>
+		<div className='px-20 py-7.5'>
+			<div className='flex items-center mb-3'>
+				<p className='text-title font-medium text-myApp-blueDark'>ผู้รับการประเมิน ({loading ? "-" : items.length})</p>
+				<div className='ml-auto flex'>
+					{/* TODO: change to evaluate status */}
+					<DefinedStatus/>
+				</div>
+			</div>
+
+			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+				{items.map((x) => (
+				<EvaluateeCardForEvaluateKpi
+					key={x.evaluatee.id}
+					id={x.evaluatee.id}
+					name={x.evaluatee.fullName}
+					title={x.evaluatee.title}
+				/>
+				))}
+			</div>
+		</div>
+	</>
   )
 }
