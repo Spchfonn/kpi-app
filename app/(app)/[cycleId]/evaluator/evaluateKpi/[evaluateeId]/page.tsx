@@ -65,6 +65,84 @@ type KpiType = { id: string; type: "QUANTITATIVE"|"QUALITATIVE"|"CUSTOM"; name: 
 
 const nodeKey = (n: KpiTreeNode) => n.id ?? n.clientId!;
 
+function computeSummary(tree: KpiTreeNode[], scores: Record<string, EvalScoreState>) {
+	const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
+  
+	const computeItemScore0to5 = (item: KpiTreeNode): number => {
+		const k = nodeKey(item);
+		const st = scores[k] ?? { score: "", checkedIds: [] };
+	
+		// QUALITATIVE
+		if (item.type?.rubric?.kind === "QUALITATIVE_CHECKLIST") {
+			const checklist = item.type.rubric.checklist ?? [];
+			const checked = new Set((st.checkedIds ?? []).map(String));
+	
+			const totalW = checklist.reduce((sum: number, x: any) => sum + Number(x.weight_percent ?? 0), 0) || 0;
+			const gotW = checklist.reduce((sum: number, x: any, i: number) => {
+				const id = String(i + 1);
+				return sum + (checked.has(id) ? Number(x.weight_percent ?? 0) : 0);
+			}, 0);
+	
+			return clamp(totalW > 0 ? (gotW / totalW) * 5 : 0, 0, 5);
+		}
+	
+		// QUANT/CUSTOM
+		const s = st.score;
+		return typeof s === "number" ? clamp(s, 0, 5) : 0;
+	};
+  
+	// ITEM: percent local
+	const itemByNode: Record<string, { score0to5: number; percentLocal: number }> = {};
+  
+	// GROUP: percent global
+	const groupByNode: Record<string, { score0to5: number; percentGlobal: number }> = {};
+  
+	// return score0to5 of node
+	const walk = (node: KpiTreeNode): number => {
+		const key = nodeKey(node);
+	
+		if (node.nodeType === "ITEM") {
+			const score0to5 = computeItemScore0to5(node);
+			const wItem = Number(node.weightPercent ?? 0);
+			const percentLocal = (score0to5 / 5) * wItem;
+	
+			itemByNode[key] = { score0to5, percentLocal };
+			return score0to5;
+		}
+	
+		// GROUP: aggregate children score by children weights
+		const children = node.children ?? [];
+		if (!children.length) {
+			groupByNode[key] = { score0to5: 0, percentGlobal: 0 };
+			return 0;
+		}
+	
+		let sumW = 0;
+		let sumScoreW = 0;
+	
+		for (const ch of children) {
+			const chScore = walk(ch);
+			const chW = Number(ch.weightPercent ?? 0); // weight of child in group
+			sumW += chW;
+			sumScoreW += chScore * chW;
+		}
+	
+		const score0to5 = sumW > 0 ? sumScoreW / sumW : 0;
+	
+		const wGroup = Number(node.weightPercent ?? 0); // weight of group
+		const percentGlobal = (score0to5 / 5) * wGroup;
+	
+		groupByNode[key] = { score0to5, percentGlobal };
+		return score0to5;
+	};
+  
+	for (const root of tree) walk(root);
+  
+	const overallPercent = tree.reduce( (sum, g) => sum + (groupByNode[nodeKey(g)]?.percentGlobal ?? 0), 0 );
+  
+	return { overallPercent, itemByNode, groupByNode };
+}
+
 const page = () => {
 	const router = useRouter();
 	const params = useParams<{ evaluateeId: string }>();
@@ -86,7 +164,17 @@ const page = () => {
 	const [scores, setScores] = useState<Record<string, EvalScoreState>>({});
 	const [scoresDraft, setScoresDraft] = useState<Record<string, EvalScoreState>>({});
 
-	const [overallPercent, setOverallPercent] = useState<number | null>(null);
+	const preview = useMemo(() => {
+		if (!tree.length) return { overallPercent: null as number | null, itemByNode: {}, groupByNode: {} };
+	  
+		const allComputedPercent = computeSummary(tree, scores);
+	  
+		return {
+			overallPercent: Number(allComputedPercent.overallPercent.toFixed(2)),
+			itemByNode: allComputedPercent.itemByNode,
+			groupByNode: allComputedPercent.groupByNode,
+		};
+	}, [tree, scores]);
 
 	// find currentPlanId from employeeId
 	useEffect(() => {
@@ -265,7 +353,6 @@ const page = () => {
 				throw new Error(json.message || "Summary failed");
 			}
 		
-			setOverallPercent(json.data?.overallPercent ?? 0);
 		} catch (e: any) {
 		  	setError(e?.message ?? "Summary failed");
 		} finally {
@@ -289,15 +376,10 @@ const page = () => {
 					<p className='text-button font-semibold text-myApp-blueDark'>สถานะการประเมินตัวชี้วัด</p>
 					<p className='text-button font-semibold text-myApp-red'>ยังไม่ประเมิน</p>
 				</div>
-				<div className='flex flex-1 gap-2'>
-					<p className='text-button font-semibold text-myApp-blueDark'>ตัวชี้วัดที่ประเมินแล้ว</p>
-					<p className='text-button font-semibold text-myApp-green'>{evaluatedCount}</p>
-					<p className='text-button font-semibold text-myApp-blueDark'>/ {itemKeys.length}</p>
-				</div>
 				<div className='flex ml-auto gap-2'>
 					<p className='text-title font-semibold text-myApp-blueDark'>สรุปผลคะแนน</p>
 					<p className='text-title font-semibold text-myApp-blueDark'>
-						{overallPercent === null ? "-" : `${overallPercent}%`}
+						{preview.overallPercent === null ? "-" : `${preview.overallPercent}%`}
 					</p>
 				</div>
 			</div>
@@ -312,18 +394,21 @@ const page = () => {
 				</Button>
 
 				<div className="flex ml-auto gap-2.5">
-					<Button
-						variant="primary"
-						primaryColor="pink"
-						onClick={onSummary}
-						disabled={summarizing || mode === "edit" || saving}>
-						{summarizing ? "กำลังคำนวณ..." : "คำนวณผลการประเมิน"}
-					</Button>
 
 					{/* if in 'view' mode, show edit button
 					if in 'edit' mode, show save and cancel button */}
 					{mode === "view" ? (
-						<Button onClick={startEdit} variant="primary" primaryColor="orange">ประเมิน</Button>
+						<>
+							<Button
+								variant="primary"
+								primaryColor="green"
+								onClick={onSummary}
+							>
+								{summarizing ? "กำลังส่งผล..." : "ส่งผลการประเมิน"}
+							</Button>
+
+							<Button onClick={startEdit} variant="primary" primaryColor="orange">ประเมิน</Button>
+						</>
 					) : (
 						<>
 						<Button onClick={cancelEdit} primaryColor="red" disabled={saving}>ยกเลิก</Button>
@@ -342,6 +427,8 @@ const page = () => {
 					showAllDetails={showAllDetails}
 					tree={tree}
 					scores={scores}
+					itemByNode={preview.itemByNode}
+					groupByNode={preview.groupByNode}
 					onChangeScores={setScores}
 				/>
 			</div>
