@@ -1,19 +1,292 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
-  // output   = "../app/generated/prisma"
 }
 
 datasource db {
   provider = "mysql"
 }
 
-/////////////////////// define option
+model EvaluationCycle {
+  id          Int                    @id @default(autoincrement())
+  name        String                 @db.VarChar(255)
+  startDate   DateTime               @db.DateTime(0)
+  endDate     DateTime               @db.DateTime(0)
+  status      SystemStatus           @default(DEFINE)
+  code        String                 @unique
+  createdAt   DateTime               @default(now())
+  publicId    String                 @unique @default(uuid())
+  updatedAt   DateTime               @updatedAt
+  assignments EvaluationAssignment[]
+}
+
+model Organization {
+  id        String              @id @default(uuid())
+  code      String              @unique
+  name      String
+  parentId  String?
+  managerId String?
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+  employees Employee[]
+  histories EmploymentHistory[]
+  manager   Employee?           @relation("OrgManager", fields: [managerId], references: [id])
+  parent    Organization?       @relation("OrgTree", fields: [parentId], references: [id])
+  children  Organization[]      @relation("OrgTree")
+
+  @@index([parentId])
+  @@index([managerId])
+}
+
+model Position {
+  id        String              @id @default(uuid())
+  code      String              @unique
+  name      String
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+  employees Employee[]
+  histories EmploymentHistory[]
+}
+
+model Level {
+  id        String              @id @default(uuid())
+  code      String              @unique
+  name      String
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+  employees Employee[]
+  histories EmploymentHistory[]
+}
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique(map: "User_email_key")
+  passwordHash String
+  isActive     Boolean   @default(true)
+  employeeId   String?   @unique(map: "User_employeeId_key")
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  isAdmin      Boolean   @default(false)
+  employee     Employee? @relation(fields: [employeeId], references: [id])
+  sessions Session[]
+  notifications NotificationRecipient[]
+
+  @@map("user")
+}
+
+model Employee {
+  id                   String                 @id @default(uuid())
+  prefixName           PrefixName
+  name                 String
+  lastName             String
+  nickname             String
+  employeeNo           String                 @unique
+  birthDate            DateTime?              @db.DateTime(0)
+  gender               Gender?                @default(UNSPECIFIED)
+  email                String                 @unique
+  phone                String?
+  startDate            DateTime
+  terminatedDate       DateTime?
+  organizationId       String
+  positionId           String
+  levelId              String
+  jobDescription       String?
+  isActive             Boolean                @default(true)
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  level                Level                  @relation(fields: [levelId], references: [id])
+  organization         Organization           @relation(fields: [organizationId], references: [id])
+  position             Position               @relation(fields: [positionId], references: [id])
+  histories            EmploymentHistory[]
+  evaluateeAssignments EvaluationAssignment[] @relation("Evaluatee")
+  evaluatorAssignments EvaluationAssignment[] @relation("Evaluator")
+  submittedAssignments EvaluationAssignment[] @relation("AssignmentSubmittedBy")
+  requestedKpiPlans    KpiPlan[]              @relation("PlanConfirmRequestedBy")
+  confirmedKpiPlans    KpiPlan[]              @relation("PlanConfirmedBy")
+  rejectedKpiPlans     KpiPlan[]              @relation("PlanRejectedBy")
+  actedNotifications   Notification[]         @relation("NotificationActor")
+  managedOrganizations Organization[]         @relation("OrgManager")
+  user                 User?
+
+  @@index([organizationId])
+  @@index([positionId])
+  @@index([levelId])
+}
+
+model EmploymentHistory {
+  id             String       @id @default(uuid())
+  employeeId     String
+  positionId     String
+  levelId        String
+  organizationId String
+  startDate      DateTime     @db.DateTime(0)
+  endDate        DateTime?    @db.DateTime(0)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  employee       Employee     @relation(fields: [employeeId], references: [id])
+  level          Level        @relation(fields: [levelId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  position       Position     @relation(fields: [positionId], references: [id])
+
+  @@index([employeeId, startDate])
+  @@index([employeeId, endDate])
+  @@index([organizationId, startDate])
+  @@index([levelId], map: "EmploymentHistory_levelId_fkey")
+  @@index([positionId], map: "EmploymentHistory_positionId_fkey")
+}
+
+model EvaluationAssignment {
+  id            String               @id @default(uuid())
+  cycleId       Int
+  evaluatorId   String
+  evaluateeId   String
+  weightPercent Decimal              @db.Decimal(5, 2)
+  currentPlanId String?              @unique
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  evalStatus    AssignmentEvalStatus @default(NOT_STARTED)
+  submittedAt   DateTime?
+  submittedById String?
+  currentPlan   KpiPlan?             @relation("AssignmentCurrentPlan", fields: [currentPlanId], references: [id])
+  cycle         EvaluationCycle      @relation(fields: [cycleId], references: [id])
+  evaluatee     Employee             @relation("Evaluatee", fields: [evaluateeId], references: [id])
+  evaluator     Employee             @relation("Evaluator", fields: [evaluatorId], references: [id])
+  submittedBy   Employee?            @relation("AssignmentSubmittedBy", fields: [submittedById], references: [id])
+  plans         KpiPlan[]
+
+  @@unique([cycleId, evaluatorId, evaluateeId])
+  @@index([evaluateeId, cycleId])
+  @@index([evaluatorId, cycleId])
+  @@index([submittedById], map: "EvaluationAssignment_submittedById_fkey")
+}
+
+model KpiType {
+  id        String         @id @default(uuid())
+  type      KpiTypeChoices
+  name      String
+  rubric    Json
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  nodes     KpiNode[]
+}
+
+model KpiPlan {
+  id                   String                @id @default(uuid())
+  assignmentId         String
+  version              Int
+  status               PlanStatus            @default(DRAFT)
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  confirmRequestedAt   DateTime?
+  confirmRequestedById String?
+  confirmStatus        PlanConfirmStatus     @default(DRAFT)
+  confirmTarget        PlanConfirmTarget?
+  confirmedAt          DateTime?
+  confirmedById        String?
+  rejectReason         String?
+  rejectedAt           DateTime?
+  rejectedById         String?
+  currentOfAssignment  EvaluationAssignment? @relation("AssignmentCurrentPlan")
+  nodes                KpiNode[]
+  assignment           EvaluationAssignment  @relation(fields: [assignmentId], references: [id])
+  confirmRequestedBy   Employee?             @relation("PlanConfirmRequestedBy", fields: [confirmRequestedById], references: [id])
+  confirmedBy          Employee?             @relation("PlanConfirmedBy", fields: [confirmedById], references: [id])
+  rejectedBy           Employee?             @relation("PlanRejectedBy", fields: [rejectedById], references: [id])
+
+  @@unique([assignmentId, version])
+  @@index([assignmentId, status])
+  @@index([assignmentId, confirmStatus])
+  @@index([confirmStatus, confirmTarget])
+  @@index([confirmRequestedById], map: "KpiPlan_confirmRequestedById_fkey")
+  @@index([confirmedById], map: "KpiPlan_confirmedById_fkey")
+  @@index([rejectedById], map: "KpiPlan_rejectedById_fkey")
+}
+
+model KpiNode {
+  id                  String          @id @default(uuid())
+  planId              String
+  nodeType            KpiNodeType
+  title               String
+  description         String?
+  parentId            String?
+  weightPercent       Decimal         @db.Decimal(5, 2)
+  typeId              String?
+  unit                String?
+  currentSubmissionId String?         @unique
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  endDate             DateTime?       @db.DateTime(0)
+  startDate           DateTime?       @db.DateTime(0)
+  sortOrder           Int             @default(0)
+  currentSubmission   KpiSubmission?  @relation("NodeCurrentSubmission", fields: [currentSubmissionId], references: [id])
+  parent              KpiNode?        @relation("NodeParent", fields: [parentId], references: [id])
+  children            KpiNode[]       @relation("NodeParent")
+  plan                KpiPlan         @relation(fields: [planId], references: [id])
+  type                KpiType?        @relation(fields: [typeId], references: [id])
+  submissions         KpiSubmission[] @relation("NodeSubmissions")
+
+  @@index([planId])
+  @@index([parentId])
+  @@index([planId, parentId, sortOrder])
+  @@index([typeId], map: "KpiNode_typeId_fkey")
+}
+
+model KpiSubmission {
+  id              String   @id @default(uuid())
+  nodeId          String
+  version         Int
+  payload         Json
+  calculatedScore Int?
+  finalScore      Int?
+  note            String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  currentOfNode   KpiNode? @relation("NodeCurrentSubmission")
+  node            KpiNode  @relation("NodeSubmissions", fields: [nodeId], references: [id])
+
+  @@unique([nodeId, version])
+  @@index([nodeId, createdAt])
+}
+
+model Notification {
+  id         String                  @id @default(uuid())
+  type       NotificationType
+  actorId    String?
+  cycleId    Int?
+  createdAt  DateTime                @default(now())
+  meta       Json?
+  actor      Employee?               @relation("NotificationActor", fields: [actorId], references: [id])
+  recipients NotificationRecipient[]
+
+  @@index([type])
+  @@index([createdAt])
+  @@index([actorId], map: "Notification_actorId_fkey")
+}
+
+model NotificationRecipient {
+  id             String       @id @default(uuid())
+  notificationId String
+  userId         String
+  readAt         DateTime?
+  createdAt      DateTime     @default(now())
+  notification   Notification @relation(fields: [notificationId], references: [id])
+  user   User @relation(fields: [userId], references: [id], map: "NotificationRecipient_userId_fkey_v2")
+
+  @@unique([notificationId, userId])
+  @@index([userId, readAt])
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade, map: "Session_userId_fkey_v2")
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
 enum SystemStatus {
   DEFINE
   EVALUATE
@@ -50,371 +323,32 @@ enum PrefixName {
   MS
 }
 
+enum PlanConfirmStatus {
+  DRAFT
+  REQUESTED
+  CONFIRMED
+  REJECTED
+  CANCELLED
+}
+
+enum PlanConfirmTarget {
+  EVALUATOR
+  EVALUATEE
+}
+
+enum AssignmentEvalStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  SUBMITTED
+}
+
 enum NotificationType {
-  // 1. evaluatee → ขอ evaluator อนุมัติ KPI ที่ evaluatee ตั้งเอง
   EVALUATEE_REQUEST_EVALUATOR_APPROVE_KPI
-
-  // 2. evaluatee รับรอง KPI ที่ evaluator ตั้งให้
   EVALUATEE_CONFIRM_EVALUATOR_KPI
-
-  // 3. evaluatee ปฏิเสธ KPI ที่ evaluator ตั้งให้
   EVALUATEE_REJECT_EVALUATOR_KPI
-
-  // 4. evaluator → ขอ evaluatee รับรอง KPI ที่ evaluator ตั้งให้
   EVALUATOR_REQUEST_EVALUATEE_CONFIRM_KPI
-
-  // 5. evaluator → สั่งให้ evaluatee กำหนด KPI เอง
   EVALUATOR_REQUEST_EVALUATEE_DEFINE_KPI
-
-  // 6. evaluator อนุมัติ KPI ที่ evaluatee กำหนดเอง
   EVALUATOR_APPROVE_EVALUATEE_KPI
-
-  // 7. evaluator ปฏิเสธ KPI ที่ evaluatee กำหนดเอง
   EVALUATOR_REJECT_EVALUATEE_KPI
-
-  // 8. evaluator ยกเลิกการขอให้รับรอง KPI
   EVALUATOR_CANCEL_REQUEST_EVALUATEE_CONFIRM_KPI
-}
-
-/////////////////////// kpi model
-
-// EvaluationCycle
-//   └── EvaluationAssignment (evaluatee + evaluator + weight)
-//         └── KpiPlan (versioned)
-//               └── KpiNode (tree)
-//                     └── KpiSubmission
-
-model EvaluationCycle {
-  id        Int          @id @default(autoincrement())
-  publicId  String       @unique @default(uuid()) // เพิ่ม UUID แยก
-  code      String       @unique
-  name      String       @db.VarChar(255)
-  startDate DateTime     @db.DateTime(0)
-  endDate   DateTime     @db.DateTime(0)
-  status    SystemStatus @default(DEFINE)
-
-  assignments EvaluationAssignment[]
-  createdAt   DateTime               @default(now())
-  updatedAt   DateTime               @updatedAt
-}
-
-model Organization {
-  id   String @id @default(uuid())
-  code String @unique
-  name String
-
-  parentId String?
-  parent   Organization?  @relation("OrgTree", fields: [parentId], references: [id])
-  children Organization[] @relation("OrgTree")
-
-  managerId String?
-  manager   Employee? @relation("OrgManager", fields: [managerId], references: [id])
-
-  employees Employee[]
-  histories EmploymentHistory[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([parentId])
-  @@index([managerId])
-}
-
-// model JobTitle {
-//   id        String @id @default(uuid())
-//   code      String @unique
-//   name      String
-
-//   employees Employee[]  
-//   histories EmploymentHistory[]
-
-//   createdAt DateTime @default(now())
-//   updatedAt DateTime @updatedAt
-// }
-
-model Position {
-  id   String @id @default(uuid())
-  code String @unique
-  name String
-
-  employees Employee[]
-  histories EmploymentHistory[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model Level {
-  id   String @id @default(uuid())
-  code String @unique // เช่น L1, L2, Senior, Manager
-  name String
-
-  employees Employee[]
-  histories EmploymentHistory[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model User {
-  id           String  @id @default(uuid())
-  email        String  @unique
-  passwordHash String
-  isActive     Boolean @default(true)
-
-  isAdmin      Boolean @default(false)
-
-  // relation กับ Employee
-  employeeId String?   @unique
-  employee   Employee? @relation(fields: [employeeId], references: [id])
-
-  sessions Session[]
-
-  lastLoginAt DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  notifications NotificationRecipient[]
-
-  @@map("user")
-}
-
-model Employee {
-  id         String     @id @default(uuid())
-  prefixName PrefixName
-  name       String
-  lastName   String
-  nickname   String
-  employeeNo String     @unique
-  birthDate  DateTime?  @db.DateTime(0)
-  gender     Gender?    @default(UNSPECIFIED)
-  email      String     @unique
-  phone      String?
-
-  startDate      DateTime
-  terminatedDate DateTime?
-
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
-
-  managedOrganizations Organization[] @relation("OrgManager")
-
-  // jobTitleId String
-  // jobTitle   JobTitle @relation(fields: [jobTitleId], references: [id])
-
-  positionId String
-  position   Position @relation(fields: [positionId], references: [id])
-
-  levelId String
-  level   Level  @relation(fields: [levelId], references: [id])
-
-  jobDescription String?
-  isActive       Boolean @default(true)
-
-  user User?
-
-  histories EmploymentHistory[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  evaluatorAssignments EvaluationAssignment[] @relation("Evaluator")
-  evaluateeAssignments EvaluationAssignment[] @relation("Evaluatee")
-
-  actedNotifications Notification[] @relation("NotificationActor")
-
-  @@index([organizationId])
-  // @@index([jobTitleId])
-  @@index([positionId])
-  @@index([levelId])
-}
-
-model EmploymentHistory {
-  id         String   @id @default(uuid())
-  employeeId String
-  employee   Employee @relation(fields: [employeeId], references: [id])
-
-  // jobTitleId String
-  // jobTitle   JobTitle @relation(fields: [jobTitleId], references: [id])
-
-  positionId String
-  position   Position @relation(fields: [positionId], references: [id])
-
-  levelId String
-  level   Level  @relation(fields: [levelId], references: [id])
-
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
-
-  startDate DateTime  @db.DateTime(0)
-  endDate   DateTime? @db.DateTime(0)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([employeeId, startDate])
-  @@index([employeeId, endDate])
-  @@index([organizationId, startDate])
-}
-
-model EvaluationAssignment {
-  id String @id @default(uuid())
-
-  cycleId Int
-  cycle   EvaluationCycle @relation(fields: [cycleId], references: [id])
-
-  evaluatorId String
-  evaluator   Employee @relation("Evaluator", fields: [evaluatorId], references: [id])
-
-  evaluateeId String
-  evaluatee   Employee @relation("Evaluatee", fields: [evaluateeId], references: [id])
-
-  weightPercent Decimal @db.Decimal(5, 2)
-
-  plans         KpiPlan[]
-  currentPlanId String?   @unique
-  currentPlan   KpiPlan?  @relation("AssignmentCurrentPlan", fields: [currentPlanId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([cycleId, evaluatorId, evaluateeId])
-  @@index([evaluateeId, cycleId])
-  @@index([evaluatorId, cycleId])
-}
-
-model KpiType {
-  id     String         @id @default(uuid())
-  type   KpiTypeChoices
-  name   String
-  rubric Json // scoring by type
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  nodes KpiNode[]
-}
-
-model KpiPlan {
-  id String @id @default(uuid())
-
-  assignmentId        String
-  assignment          EvaluationAssignment  @relation(fields: [assignmentId], references: [id])
-  currentOfAssignment EvaluationAssignment? @relation("AssignmentCurrentPlan")
-
-  version Int
-  status  PlanStatus @default(DRAFT)
-
-  nodes KpiNode[]
-
-  confirmRequestedAt DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([assignmentId, version])
-  @@index([assignmentId, status])
-}
-
-model KpiNode {
-  id     String  @id @default(uuid())
-  planId String
-  plan   KpiPlan @relation(fields: [planId], references: [id])
-
-  nodeType    KpiNodeType
-  title       String
-  description String?
-
-  parentId      String?
-  parent        KpiNode? @relation("NodeParent", fields: [parentId], references: [id])
-  children      KpiNode[] @relation("NodeParent")
-
-  sortOrder Int @default(0)
-
-  weightPercent Decimal @db.Decimal(5, 2)
-
-  // เฉพาะ ITEM
-  typeId    String?
-  type      KpiType?  @relation(fields: [typeId], references: [id])
-  unit      String?
-  startDate DateTime? @db.DateTime(0)
-  endDate   DateTime? @db.DateTime(0)
-
-  submissions KpiSubmission[] @relation("NodeSubmissions")
-
-  currentSubmissionId String?        @unique
-  currentSubmission   KpiSubmission? @relation("NodeCurrentSubmission", fields: [currentSubmissionId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([planId])
-  @@index([parentId])
-  @@index([planId, parentId, sortOrder])
-}
-
-model KpiSubmission {
-  id     String  @id @default(uuid())
-  nodeId String
-  node   KpiNode @relation("NodeSubmissions", fields: [nodeId], references: [id])
-
-  // back relation ของ currentSubmission (optional)
-  currentOfNode KpiNode? @relation("NodeCurrentSubmission")
-
-  version         Int
-  payload         Json
-  calculatedScore Int?
-  finalScore      Int?
-  note            String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([nodeId, version])
-  @@index([nodeId, createdAt])
-}
-
-model Notification {
-  id        String           @id @default(uuid())
-  type      NotificationType
-
-  actorId   String?
-  actor     Employee? @relation("NotificationActor", fields: [actorId], references: [id])
-
-  cycleId   Int?
-  meta      Json?   // for store assignmentId/planId/nodeId
-
-  createdAt DateTime @default(now())
-
-  recipients NotificationRecipient[]
-
-  @@index([type])
-  @@index([createdAt])
-}
-
-model NotificationRecipient {
-  id             String       @id @default(uuid())
-  notificationId String
-  notification   Notification @relation(fields: [notificationId], references: [id])
-
-  userId String
-  user   User   @relation(fields: [userId], references: [id])
-
-  readAt DateTime?
-
-  createdAt DateTime @default(now())
-
-  @@unique([notificationId, userId])
-  @@index([userId, readAt])
-}
-
-model Session {
-  id        String   @id @default(uuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-
-  @@index([userId])
-  @@index([expiresAt])
 }
