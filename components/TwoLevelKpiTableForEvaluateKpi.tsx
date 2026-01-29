@@ -154,7 +154,7 @@ export default function TwoLevelKpiTableForEvaluateKpi({
 					<div className={`${colClass} place-items-center`}>
 						<div>ตัวชี้วัด</div>
 						<div>ค่าน้ำหนัก</div>
-						<div>คะแนนที่ได้</div>
+						<div>เกณฑ์ที่ได้</div>
 						<div>คะแนนที่ได้ (%)</div>
 					</div>
 				</div>

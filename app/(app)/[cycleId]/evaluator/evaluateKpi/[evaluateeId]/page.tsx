@@ -20,9 +20,27 @@ function getLoginUser(): LoginUser | null {
 	}
 }  
 
+type EvalStatus = "NOT_STARTED" | "IN_PROGRESS" | "SUBMITTED";
+
+const EVAL_STATUS_UI: Record<EvalStatus, { label: string; className: string }> = {
+	NOT_STARTED: {
+		label: "ยังไม่ประเมินตัวชี้วัด",
+		className: "text-myApp-red",
+	},
+	IN_PROGRESS: {
+		label: "กำลังประเมินตัวชี้วัด",
+		className: "text-myApp-orange",
+	},
+	SUBMITTED: {
+		label: "ประเมินตัวชี้วัดสมบูรณ์",
+		className: "text-myApp-green",
+	},
+};
+
 type EvaluateeItem = {
 	assignmentId: string;
 	currentPlanId: string | null;
+	evalStatus: EvalStatus;
 	evaluatee: { id: string; fullName: string; title: string };
 };
 
@@ -164,6 +182,8 @@ const page = () => {
 	const [scores, setScores] = useState<Record<string, EvalScoreState>>({});
 	const [scoresDraft, setScoresDraft] = useState<Record<string, EvalScoreState>>({});
 
+	const [evalStatus, setEvalStatus] = useState<EvalStatus>("NOT_STARTED");
+
 	const preview = useMemo(() => {
 		if (!tree.length) return { overallPercent: null as number | null, itemByNode: {}, groupByNode: {} };
 	  
@@ -209,6 +229,7 @@ const page = () => {
 		
 				setPlanId(found.currentPlanId);
 				setEvaluateeName(found.evaluatee.fullName);
+				setEvalStatus((found.evalStatus ?? "NOT_STARTED") as EvalStatus);
 			} catch (e: any) {
 				setError(e?.message ?? "Load failed");
 			} finally {
@@ -292,6 +313,7 @@ const page = () => {
 
 	// edit console
 	const startEdit = () => {
+		if (evalStatus === "SUBMITTED") return;
 		setScoresDraft(scores);
 		setMode("edit");
 	};
@@ -360,12 +382,45 @@ const page = () => {
 		}
 	};
 
+	const onSubmit = async () => {
+		try {
+			setSummarizing(true);
+			setError(null);
+		
+			const res = await fetch("/api/submissions/submit", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ planId }),
+			});
+		
+			const json = await res.json();
+			if (!res.ok || !json.ok) throw new Error(json.message || "Submit failed");
+		
+			setEvalStatus("SUBMITTED");
+			setMode("view");
+		
+			// reload scores
+			const r = await fetch(`/api/submissions?planId=${planId}`, { cache: "no-store" });
+			const j = await r.json();
+			if (r.ok && j.ok) {
+				setScores(j.data.scores ?? {});
+				setScoresDraft(j.data.scores ?? {});
+			}
+		} catch (e: any) {
+		  	setError(e?.message ?? "Submit failed");
+		} finally {
+		  	setSummarizing(false);
+		}
+	};
+
 	const [confirmOpen, setConfirmOpen] = useState(false);
 	const cancelDelete = () => setConfirmOpen(false);
 	const confirmDelete = () => setConfirmOpen(false);
 
 	if (loading) return <div className="p-10">Loading...</div>;
 	if (error) return <div className="p-10 text-myApp-red">{error}</div>;
+
+	const statusUI = EVAL_STATUS_UI[evalStatus] ?? EVAL_STATUS_UI.NOT_STARTED;
 
   	return (
 	<>
@@ -374,7 +429,9 @@ const page = () => {
 				<p className='text-title font-medium text-myApp-blueDark'>ประเมินตัวชี้วัด ({evaluateeName})</p>
 				<div className='flex gap-2'>
 					<p className='text-button font-semibold text-myApp-blueDark'>สถานะการประเมินตัวชี้วัด</p>
-					<p className='text-button font-semibold text-myApp-red'>ยังไม่ประเมิน</p>
+					<p className={`text-button font-semibold ${statusUI?.className}`}>
+						{statusUI.label}
+					</p>
 				</div>
 				<div className='flex ml-auto gap-2'>
 					<p className='text-title font-semibold text-myApp-blueDark'>สรุปผลคะแนน</p>
@@ -402,12 +459,20 @@ const page = () => {
 							<Button
 								variant="primary"
 								primaryColor="green"
-								onClick={onSummary}
+								onClick={onSubmit}
+								disabled={summarizing || saving || evalStatus === "SUBMITTED"}
 							>
 								{summarizing ? "กำลังส่งผล..." : "ส่งผลการประเมิน"}
 							</Button>
 
-							<Button onClick={startEdit} variant="primary" primaryColor="orange">ประเมิน</Button>
+							<Button
+								onClick={startEdit}
+								variant="primary"
+								primaryColor="orange"
+								disabled={evalStatus === "SUBMITTED"}
+							>
+								แก้ไขผลการประเมิน
+							</Button>
 						</>
 					) : (
 						<>

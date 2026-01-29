@@ -39,7 +39,6 @@ export async function POST(req: Request, ctx: { params: Promise<{ planId: string
 				id: true,
 				confirmStatus: true,
 				confirmTarget: true,
-				confirmRequestedById: true,
 				assignmentId: true,
 				assignment: { select: { id: true, cycleId: true, evaluatorId: true, evaluateeId: true, currentPlanId: true } },
 			},
@@ -52,25 +51,20 @@ export async function POST(req: Request, ctx: { params: Promise<{ planId: string
 			return NextResponse.json({ ok: false, message: "plan ไม่ได้อยู่ในสถานะ REQUESTED" }, { status: 400 });
 		}
 
-		if (plan.confirmTarget !== "EVALUATEE") {
-			return NextResponse.json({ ok: false, message: "ยกเลิกได้เฉพาะคำขอที่ส่งไป evaluatee" }, { status: 400 });
-		}
+		const mustBe = plan.confirmTarget === "EVALUATOR" ? plan.assignment.evaluatorId : plan.assignment.evaluateeId;
+		if (user.employeeId !== mustBe) return NextResponse.json({ ok: false, message: "ไม่มีสิทธิ์รับรอง" }, { status: 403 });
 
-		const isEvaluator = user.employeeId === plan.assignment.evaluatorId;
-		const isRequester = user.employeeId === plan.confirmRequestedById;
-		if (!isEvaluator && !isRequester) return NextResponse.json({ ok: false, message: "ไม่มีสิทธิ์ยกเลิก" }, { status: 403 });
+		const notiType: NotificationType = plan.confirmTarget === "EVALUATOR" ? "EVALUATOR_APPROVE_EVALUATEE_KPI" : "EVALUATEE_CONFIRM_EVALUATOR_KPI";
 
-		const notiType: NotificationType = "EVALUATOR_CANCEL_REQUEST_EVALUATEE_CONFIRM_KPI";
-		const recipientEmployeeIds = [plan.assignment.evaluateeId];
+		const recipientEmployeeIds = [plan.assignment.evaluatorId, plan.assignment.evaluateeId].filter((x) => x !== user.employeeId);
 
 		await prisma.$transaction(async (tx) => {
 			await tx.kpiPlan.update({
 				where: { id: planId },
 				data: {
-					confirmStatus: "CANCELLED",
-					confirmTarget: null,
-					confirmRequestedAt: null,
-					confirmRequestedById: null,
+					confirmStatus: "CONFIRMED",
+					confirmedAt: new Date(),
+					confirmedById: user.employeeId,
 				},
 			});
 
@@ -86,7 +80,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ planId: string
 
 		return NextResponse.json({ ok: true }, { status: 200 });
 	} catch (err: any) {
-		console.error("POST /api/kpiPlans/[planId]/cancelRequestConfirm error:", err);
+		console.error("POST /api/kpiPlans/[planId]/confirm error:", err);
 		return NextResponse.json({ ok: false, message: err?.message ?? "Internal Server Error" }, { status: 500 });
 	}
 }
