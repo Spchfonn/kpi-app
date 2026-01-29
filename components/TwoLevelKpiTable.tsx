@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { FiChevronDown, FiChevronRight, FiPlusCircle, FiTrash2, FiArrowUp, FiArrowDown, FiCheck } from "react-icons/fi";
 import KpiDetailsBar from "./KpiDetailsBar";
 import ScoreBoxForQuantitativeKpi from "./ScoreBoxForQuantitativeKpi";
@@ -57,6 +57,34 @@ function CheckBox({ checked, onChange }: { checked: boolean; onChange: (v: boole
          {checked && <FiCheck className="text-white text-xs" />}
       </button>
    );
+}
+
+function emptyRubricForType(t: "QUANTITATIVE" | "QUALITATIVE" | "CUSTOM"): Rubric {
+	if (t === "QUANTITATIVE") {
+		return {
+			kind: "QUANTITATIVE_1_TO_5",
+			levels: [
+			{ unit: null, score: 1, value: 0 },
+			{ unit: null, score: 2, value: 0 },
+			{ unit: null, score: 3, value: 0 },
+			{ unit: null, score: 4, value: 0 },
+			{ unit: null, score: 5, value: 0 },
+			],
+		};
+	}
+	if (t === "QUALITATIVE") {
+	  	return { kind: "QUALITATIVE_CHECKLIST", checklist: [] };
+	}
+	return {
+		kind: "CUSTOM_DESCRIPTION_1_TO_5",
+		levels: [
+			{ score: 1, desc: "" },
+			{ score: 2, desc: "" },
+			{ score: 3, desc: "" },
+			{ score: 4, desc: "" },
+			{ score: 5, desc: "" },
+		],
+	};
 }
 
 type Props = {

@@ -173,6 +173,7 @@ export default function KpiDetailsBar({
 						<option value="month">เดือน</option>
 						<option value="percent">%</option>
 						<option value="count">ครั้ง</option>
+						<option value="score">คะแนน</option>
 						<option value="minutes">นาที</option>
 					</select>
 
