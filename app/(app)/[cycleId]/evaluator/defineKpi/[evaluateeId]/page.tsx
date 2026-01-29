@@ -205,7 +205,7 @@ const page = () => {
 
    const generateKpiByAI = async () => {
       try {
-         setIsGenerating(true); // เปลี่ยนมาใช้ isGenerating แทน saving
+         setIsGenerating(true);
          setError("");
          setShowInformModal(true); 
 
@@ -218,7 +218,9 @@ const page = () => {
          const j = await res.json();
          if (!j.success) throw new Error(j.error ?? "AI generate failed");
 
-         const typeMap = new Map(types.map((t) => [t.type.toLowerCase(), t.id]));
+         // สร้าง Map สำหรับค้นหา Type Object เต็มรูปแบบตาม ID
+         const typeFullMap = new Map(types.map((t) => [t.type.toLowerCase(), t]));
+         
          const unitMap = new Map<string, string>();
          if (j.measurements?.kpi_measurements) {
             j.measurements.kpi_measurements.forEach((m: any) => {
@@ -232,17 +234,21 @@ const page = () => {
             title: group.group_title,
             description: group.group_goal,
             weightPercent: group.group_percent,
-            children: group.level2_kpis.map((kpi: any) => ({
-               nodeType: "ITEM",
-               title: kpi.title,
-               description: kpi.description,
-               weightPercent: kpi.kpi_percent,
-               typeId: typeMap.get(kpi.kpi_type.toLowerCase()) ?? null,
-               unit: unitMap.get(kpi.kpi_code) || null,
-               startDate: cycleStartIso,
-               endDate: cycleEndIso,
-               children: [],
-            })),
+            children: group.level2_kpis.map((kpi: any) => {
+               const typeObj = typeFullMap.get(kpi.kpi_type.toLowerCase()); // ดึง Object Type ทั้งหมดมา
+               return {
+                  nodeType: "ITEM",
+                  title: kpi.title,
+                  description: kpi.description,
+                  weightPercent: kpi.kpi_percent,
+                  typeId: typeObj?.id ?? null, // เก็บ ID ไว้
+                  type: typeObj ?? null,       // ใส่ Object Type (ที่มี rubric) เข้าไปด้วย
+                  unit: unitMap.get(kpi.kpi_code) || null,
+                  startDate: cycleStartIso,
+                  endDate: cycleEndIso,
+                  children: [],
+               };
+            }),
          }));
 
          const withDisplayNo = assignDisplayNo(aiNodes);
@@ -421,20 +427,20 @@ const page = () => {
                       </button>
                    </div>
 
-                   <div className="flex-1 overflow-y-auto p-4 bg-gray-100/50">
-                      <TwoLevelKpiTable
-                         mode="view"
-                         showAllDetails={true}
-                         selectable={true}
-                         selectedIds={aiSelectedIds}
-                         onSelectionChange={setAiSelectedIds}
-                         tree={aiTree}
-                         onChangeTree={setAiTree}
-                         kpiTypes={types}
-                         defaultStartDate={cycleStartIso}
-                         defaultEndDate={cycleEndIso}
-                      />
-                   </div>
+                  <div className="flex-1 overflow-y-auto p-4 bg-gray-100/50">
+                     <TwoLevelKpiTable
+                           mode="view"
+                           showAllDetails={true} // ตัวนี้จะเป็นตัวสั่งให้กางเกณฑ์คะแนนออก
+                           selectable={true}
+                           selectedIds={aiSelectedIds}
+                           onSelectionChange={setAiSelectedIds}
+                           tree={aiTree} // ข้อมูลในนี้ต้องมี property 'type' ที่มี 'rubric' อยู่ข้างใน
+                           onChangeTree={setAiTree}
+                           kpiTypes={types}
+                           defaultStartDate={cycleStartIso}
+                           defaultEndDate={cycleEndIso}
+                     />
+                  </div>
 
                    <div className="px-6 py-2 bg-white flex justify-end gap-3 items-center">
                       <div className="mr-auto text-sm text-gray-500">
@@ -455,7 +461,7 @@ const page = () => {
                          onClick={handleConfirmAiSelection}
                          disabled={aiSelectedIds.size === 0}
                       >
-                         ยืนยัน ({aiSelectedIds.size})
+                         ยืนยัน
                       </Button>
                    </div>
                 </div>

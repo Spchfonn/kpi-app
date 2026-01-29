@@ -161,7 +161,7 @@ export async function PUT(req: Request) {
 			{ status: 500 }
 		);
 	}
-}
+}	
 
 export async function GET(req: Request) {
 	try {
