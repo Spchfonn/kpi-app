@@ -41,6 +41,7 @@ export async function GET(req: Request) {
 			orderBy: [{ createdAt: "asc" }],
 			select: {
 				id: true,
+				evalStatus: true,
 				weightPercent: true,
 				currentPlanId: true,
 				evaluatee: {
@@ -64,6 +65,7 @@ export async function GET(req: Request) {
 		// 3) shape for cards
 		const data = assignments.map((a) => ({
 			assignmentId: a.id,
+			evalStatus: a.evalStatus,
 			currentPlanId: a.currentPlanId,
 			weightPercent: a.weightPercent, // decimal -> string usually
 			evaluatee: {
