@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { prisma } from "@/prisma/client";
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY!;
 const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
@@ -17,6 +18,7 @@ async function callChatGPT(messages: any[]) {
     body: JSON.stringify({
       model: "gpt-4o-mini",
       messages,
+      response_format: { type: "json_object" }, // เพิ่มบรรทัดนี้
       temperature: 0.3,
     }),
   });
@@ -32,8 +34,51 @@ async function callChatGPT(messages: any[]) {
 /**
  * API Route POST สำหรับสร้าง KPI + Measurement
  */
-export async function POST() {
+export async function POST(req: Request) {
   try {
+    // ตรวจสอบว่ามี Body ส่งมาจริงไหม
+    const contentType = req.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+       return NextResponse.json({ success: false, error: "Invalid Content-Type" }, { status: 400 });
+    }
+
+    const body = await req.json();
+    if (!body || Object.keys(body).length === 0) {
+       throw new Error("Request body is empty");
+    }
+    
+    const { evaluateeId } = body;
+    
+    if (!evaluateeId) {
+      return NextResponse.json(
+        { success: false, error: "Missing evaluateeId" },
+        { status: 400 }
+      );
+    }
+
+    // 2. ดึงข้อมูล Employee จาก Database พร้อม Relation ที่เกี่ยวข้อง
+    const employee = await prisma.employee.findUnique({
+      where: { id: evaluateeId },
+      include: {
+        position: true,
+        level: true,
+        organization: true,
+      },
+    });
+    console.log("ผลการหา Employee:", employee);
+    if (!employee) {
+      return NextResponse.json(
+        { success: false, error: "Employee not found" },
+        { status: 404 }
+      );
+    }
+
+    // 3. เตรียมข้อมูลสำหรับ Prompt
+    const positionName = employee.position?.name || "ไม่ระบุตำแหน่ง";
+    const levelName = employee.level?.name || "ไม่ระบุระดับ";
+    const orgName = employee.organization?.name || "ไม่ระบุแผนก";
+    const jobDescription = employee.jobDescription || "- ไม่ได้ระบุรายละเอียดงาน -";
+
     /* ---------------- รอบที่ 1: สร้าง KPI ---------------- */
     const round1Messages = [
       {
@@ -44,18 +89,11 @@ export async function POST() {
       {
         role: "user",
         content: `บริบทผู้ใช้งาน (ใช้เพื่อออกแบบ KPI):
-- ตำแหน่งงาน: Software Engineer (Backend)
-- ระดับ: Mid-level
-- แผนก: IT / Engineering
-- รายละเอียดงานหลัก:
-  1) พัฒนาและดูแลระบบ backend API
-  2) แก้ bug และลด incident ใน production
-  3) ปรับปรุง performance และความเสถียร
-  4) ทำงานร่วมกับทีม product/frontend และส่งมอบงานตาม sprint
-- เป้าหมายทีม/องค์กรที่เกี่ยวข้อง:
-  - ส่งมอบงานตรงเวลาและตาม scope
-  - ลด defect/incident ที่เกิดหลัง deploy
-  - คุณภาพโค้ดดีขึ้นและลดงานแก้ซ้ำ
+- ตำแหน่งงาน: ${positionName}
+- ระดับ: ${levelName}
+- แผนก: ${orgName}
+- รายละเอียดงานหลัก (Job Description):
+  ${jobDescription}
 งานที่ต้องทำ:
 1) แนะนำ KPI ในรูปแบบ 2 ระดับ
    - ระดับที่ 1 = หมวดเป้าหมาย (3 หมวด)
@@ -74,6 +112,7 @@ export async function POST() {
 - ต้องตรง schema ด้านล่างแบบเคร่งครัด (ห้ามมี key เกิน/ขาด)
 - ห้ามมีข้อความอื่นนอก JSON
 - ถ้าทำตามไม่ได้ ให้ตอบ {} เท่านั้น
+- title ให้ตอบเป็นภาษาไทยเท่านั้น
 
 schema (ต้องใช้ key ตามนี้เท่านั้น):
 {
@@ -104,13 +143,22 @@ schema (ต้องใช้ key ตามนี้เท่านั้น):
       },
     ];
 
-    const round1Response = await callChatGPT(round1Messages);
+const round1Response = await callChatGPT(round1Messages);
     const round1Content = round1Response.choices[0].message.content;
 
     console.log("===== ROUND 1 RAW CONTENT =====");
     console.log(round1Content);
 
-    const round1Data = JSON.parse(round1Content);
+  let round1Data;
+  try {
+      // ใช้ Regex ลบทุกอย่างที่อยู่นอกปีกกา { ... } ถ้า AI เผลอใส่ข้อความอื่นมา
+      const jsonMatch = round1Content.match(/\{[\s\S]*\}/);
+      const cleaned = jsonMatch ? jsonMatch[0] : round1Content;
+      round1Data = JSON.parse(cleaned);
+  } catch (e) {
+      console.error("Failed to parse JSON:", round1Content);
+      throw new Error("AI returned invalid JSON format");
+  }
 
     console.log("===== ROUND 1 PARSED =====");
     console.log(round1Data);
@@ -131,8 +179,8 @@ schema (ต้องใช้ key ตามนี้เท่านั้น):
       {
         role: "user",
         content: `บริบทเพิ่มเติม (ใช้เพื่อกำหนดเกณฑ์วัดผล)
-- ตำแหน่งงาน: Software Engineer (Backend)
-- ระดับ: Mid-level
+- ตำแหน่งงาน: ${positionName}
+- ระดับ: ${levelName}
 
 รายการ KPI (ได้จากรอบก่อน): ${JSON.stringify(allKpis, null, 2)}
 
@@ -210,7 +258,7 @@ schema (ต้องใช้ key ตามนี้เท่านั้น):
 - score ใช้ได้เฉพาะตัวเลข 1, 2, 3, 4, 5 เท่านั้น
 - ห้ามเว้น scoring ว่าง
 - ห้ามใช้ระบบคะแนนแบบอื่น
-- metric_name และ definition ต้องเป็นภาษาไทย
+- title, metric_name และ definition ต้องเป็นภาษาไทยเท่านั้น
 
 ข้อกำหนดเพิ่มเติม
 - frequency ต้องสอดคล้องกับ timeframe ของ KPI (weekly / monthly / quarterly)
@@ -230,19 +278,11 @@ schema (ต้องใช้ key ตามนี้เท่านั้น):
         "metric_name": "string",
         "definition": "string",
         "unit": "string",
-        "frequency": "weekly | monthly | quarterly",
-        },
-        "checklist": [
-          { "item": "string", "weight_percent": 30 }
-        ],
-        "scoring": [
-          {
-            "condition": "number",
-            "score": "number"
-          }
-        ],
-        "notes": "string"
-      }
+        "frequency": "weekly | monthly | quarterly"
+      },
+      "checklist": [],
+      "scoring": [],
+      "notes": "string"
     }
   ]
 }
@@ -254,7 +294,16 @@ schema (ต้องใช้ key ตามนี้เท่านั้น):
     const round2Response = await callChatGPT(round2Messages);
     const round2Content = round2Response.choices[0].message.content;
 
-    const round2Data = JSON.parse(round2Content);
+    function parseAIResponse(content: string) {
+      try {
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        const cleaned = jsonMatch ? jsonMatch[0] : content;
+        return JSON.parse(cleaned);
+      } catch (e) {
+        throw new Error("AI returned invalid JSON format");
+      }
+    }
+   const round2Data = parseAIResponse(round2Content); 
 
     /* ---------------- return JSON ---------------- */
     return NextResponse.json({

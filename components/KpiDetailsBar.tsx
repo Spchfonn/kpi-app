@@ -169,10 +169,11 @@ export default function KpiDetailsBar({
 						"
 					>
 						<option value="">-</option>
-						<option value="วัน">วัน</option>
-						<option value="เดือน">เดือน</option>
+						<option value="day">วัน</option>
+						<option value="month">เดือน</option>
 						<option value="percent">%</option>
-						<option value="ครั้ง">ครั้ง</option>
+						<option value="count">ครั้ง</option>
+						<option value="minutes">นาที</option>
 					</select>
 
 					<FiChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-myApp-blueDark" />
