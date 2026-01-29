@@ -103,18 +103,29 @@ export async function GET(req: Request) {
 		const assignment = await prisma.evaluationAssignment.findUnique({
 			where: {
 				cycleId_evaluatorId_evaluateeId: {
-					cycleId: cycle.id,
-					evaluatorId,
-					evaluateeId,
+						cycleId: cycle.id,
+						evaluatorId,
+						evaluateeId,
 				},
 			},
-			select: { 	id: true,
-						currentPlanId: true,
-						cycleId: true,
-						evaluatorId: true,
-						evaluateeId: true,
-						evaluatee: {select: { prefixName: true, name: true, lastName: true },} 
-					},
+			select: {
+				id: true,
+				currentPlanId: true,
+				cycleId: true,
+				evaluatorId: true,
+				evaluateeId: true,
+				evaluatee: {
+						// เพิ่มการ select ข้อมูลตำแหน่ง ระดับ และแผนกตรงนี้
+						select: {
+							prefixName: true,
+							name: true,
+							lastName: true,
+							position: { select: { name: true } },     // ดึงชื่อตำแหน่ง
+							level: { select: { name: true } },        // ดึงชื่อระดับ
+							organization: { select: { name: true } }, // ดึงชื่อแผนก
+						},
+				}
+			},
 		});
 
 		if (!assignment) {
@@ -140,6 +151,9 @@ export async function GET(req: Request) {
 						createdNewPlan: false,
 						evaluatee: {
 							fullNameTh: `${PREFIX_TH[assignment.evaluatee.prefixName]}${assignment.evaluatee.name} ${assignment.evaluatee.lastName}`,
+							position: assignment.evaluatee.position,
+							level: assignment.evaluatee.level,
+							organization: assignment.evaluatee.organization,
 						}
 					},
 				},
