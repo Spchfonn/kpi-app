@@ -15,6 +15,7 @@ export default function LoginPage() {
 
 	type LoginResponse = {
 	userId: string;
+	email: string;
 	employeeId?: string;
 	cycle?: {
 		id: string;
