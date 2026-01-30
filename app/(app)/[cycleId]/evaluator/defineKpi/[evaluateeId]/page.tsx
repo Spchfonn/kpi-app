@@ -368,7 +368,7 @@ const page = () => {
 
          {/* --- 1. Inform Data Modal (ขณะรอ AI) --- */}
          {showInformModal && (
-            <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4">
+            <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/60 p-4">
                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 text-center animate-in fade-in zoom-in-95">
                   <div className="mb-6 flex justify-center">
                      <div className="w-16 h-16 border-4 border-t-pink-500 border-gray-100 rounded-full animate-spin"></div>
