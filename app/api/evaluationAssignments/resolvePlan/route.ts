@@ -103,9 +103,9 @@ export async function GET(req: Request) {
 		const assignment = await prisma.evaluationAssignment.findUnique({
 			where: {
 				cycleId_evaluatorId_evaluateeId: {
-					cycleId: cycle.id,
-					evaluatorId,
-					evaluateeId,
+						cycleId: cycle.id,
+						evaluatorId,
+						evaluateeId,
 				},
 			},
 			select: {
