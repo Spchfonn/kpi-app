@@ -5,29 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="efa7c69f-6049-41ab-9563-086e6e42c610" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/(app)/[cycleId]/evaluator/evaluateKpi/[evaluateeId]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(app)/[cycleId]/evaluator/evaluateKpi/[evaluateeId]/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/kpiPlans/[planId]/cancelRequestConfirm/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/kpiPlans/[planId]/cancelRequestConfirm/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/kpiPlans/[planId]/requestConfirm/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/kpiPlans/[planId]/requestConfirm/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/submissions/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/submissions/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/submissions/summary/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/submissions/summary/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/lib/auth.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/lib/auth.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/prisma.config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/prisma.config.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/prisma/migrations/20260111074259_create_evaluation_cycle/migration.sql" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/prisma/migrations/20260113094507_init_kpi_schema/migration.sql" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/prisma/migrations/20260114095202_add_employment_history/migration.sql" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/prisma/migrations/20260115142615_revise_datetime/migration.sql" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/prisma/migrations/20260120075522_add_kpinode_dates/migration.sql" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/prisma/migrations/20260120082630_add_kpinode_sort_order/migration.sql" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/prisma/migrations/20260121075350_remove_job_title/migration.sql" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/prisma/migrations/20260121080817_add_user_and_login_relation/migration.sql" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/prisma/migrations/20260124210338_add_notification/migration.sql" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/prisma/migrations/20260127145948_add_is_admin/migration.sql" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/prisma/migrations/20260127164528_add_sessions/migration.sql" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/prisma/migrations/20260127183446_add_confirm_and_notification_enum/migration.sql" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/prisma/migrations/20260128000100_sync_confirm_and_notification_enum/migration.sql" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/prisma/migrations/20260128000200_baseline_user_fk_sync/migration.sql" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/prisma/schema.prisma" beforeDir="false" afterPath="$PROJECT_DIR$/prisma/schema.prisma" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(app)/[cycleId]/evaluator/defineKpi/[evaluateeId]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(app)/[cycleId]/evaluator/defineKpi/[evaluateeId]/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(app)/[cycleId]/evaluator/defineKpi/layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(app)/[cycleId]/evaluator/defineKpi/layout.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/user/UserNavBarForDefineKpi.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/user/UserNavBarForDefineKpi.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -51,7 +31,7 @@
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
     "database.data.extractors.current.export.id": "SQL Inserts",
-    "git-widget-placeholder": "backend/evaluateKpiApi",
+    "git-widget-placeholder": "api/notification-new",
     "last_opened_file_path": "/Users/fonspch"
   },
   "keyToStringList": {

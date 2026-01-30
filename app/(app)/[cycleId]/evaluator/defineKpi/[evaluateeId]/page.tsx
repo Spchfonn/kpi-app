@@ -40,6 +40,17 @@ type Node = {
 	type?: KpiType | null;
 };
 
+type PlanConfirmStatus = "DRAFT" | "REQUESTED" | "CONFIRMED" | "REJECTED" | "CANCELLED";
+type PlanConfirmTarget = "EVALUATOR" | "EVALUATEE" | null;
+
+const PLAN_CONFIRM_UI: Record<PlanConfirmStatus, { label: string; className: string }> = {
+	DRAFT: { label: "ยังไม่กำหนดตัวชี้วัด", className: "text-myApp-red" },
+	REQUESTED: { label: "รอการอนุมัติ/รับรอง", className: "text-myApp-orange" },
+	CONFIRMED: { label: "กำหนดตัวชี้วัดสมบูรณ์", className: "text-myApp-green" },
+	REJECTED: { label: "ตัวชี้วัดถูกปฏิเสธ", className: "text-myApp-red" },
+	CANCELLED: { label: "ยกเลิกคำขอ", className: "text-myApp-blueDark" },
+};
+
 //
 // helper
 //
@@ -110,7 +121,11 @@ const page = () => {
 	const [saving, setSaving] = useState(false);
 	const [error, setError] = useState<string>("");
 
-	const [pendingConfirm, setPendingConfirm] = useState(false);
+	const [confirmStatus, setConfirmStatus] = useState<PlanConfirmStatus>("DRAFT");
+	const [confirmTarget, setConfirmTarget] = useState<PlanConfirmTarget>(null);
+
+	const isRequested = confirmStatus === "REQUESTED";
+	const lockEdit = confirmStatus === "REQUESTED" || confirmStatus === "CONFIRMED";
 
 	const [planId, setPlanId] = useState<string | null>(null);
 	const [types, setTypes] = useState<KpiType[]>([]);
@@ -187,7 +202,8 @@ const page = () => {
 		
 				setTree(loadedTree);
 				setDraftTree(loadedTree); // initial draft
-				setPendingConfirm(!!jPlan.data.confirmRequestedAt);
+				setConfirmStatus((jPlan.data.confirmStatus ?? "DRAFT") as PlanConfirmStatus);
+				setConfirmTarget((jPlan.data.confirmTarget ?? null) as PlanConfirmTarget);
 			} catch (e: any) {
 				console.error(e);
 				setError(e?.message ?? "โหลดข้อมูลไม่สำเร็จ");
@@ -255,7 +271,7 @@ const page = () => {
 		setError("");
 	  
 		try {
-			const endpoint = pendingConfirm
+			const endpoint = isRequested
 				? `/api/kpiPlans/${planId}/cancelRequestConfirm`
 				: `/api/kpiPlans/${planId}/requestConfirm`;
 		
@@ -263,7 +279,16 @@ const page = () => {
 			const j = await res.json();
 			if (!j.ok) throw new Error(j.message ?? "ทำรายการไม่สำเร็จ");
 		
-			setPendingConfirm(!pendingConfirm);
+			const reloadPlanStatus = async () => {
+				const r = await fetch(`/api/kpiPlans/${planId}`, { cache: "no-store" });
+				const j = await r.json();
+				if (r.ok && j.ok) {
+					setConfirmStatus(j.data.confirmStatus);
+					setConfirmTarget(j.data.confirmTarget ?? null);
+				}
+			};
+			  
+			await reloadPlanStatus();
 		} catch (e: any) {
 		  	setError(e?.message ?? "ทำรายการไม่สำเร็จ");
 		} finally {
@@ -284,7 +309,9 @@ const page = () => {
 				</p>
 				<div className='flex flex-1 gap-2'>
 					<p className='text-button font-semibold text-myApp-blueDark'>สถานะการกำหนดตัวชี้วัด</p>
-					<p className='text-button font-semibold text-myApp-red'>ยังไม่กำหนด</p>
+					<p className={`text-button font-semibold ${PLAN_CONFIRM_UI[confirmStatus].className}`}>
+						{PLAN_CONFIRM_UI[confirmStatus].label}
+					</p>
 				</div>
 				<p className="text-center text-body font-medium text-myApp-blueDark">
 					รูปแบบการกำหนดตัวชี้วัด : 2 ระดับ
@@ -319,18 +346,18 @@ const page = () => {
 					{mode === "view" ? (
 						<>
 						<Button 
-							variant={pendingConfirm ? "outline" : "primary"}
+							variant={isRequested ? "outline" : "primary"}
 							primaryColor="green"
 							onClick={() => {
 								if (saving) return;
-								if (pendingConfirm) setConfirmOpenCancel(true);
+								if (isRequested) setConfirmOpenCancel(true);
 								else setConfirmOpenConfirm(true);
 							}}
 							disabled={saving}
 						>
-							{pendingConfirm ? "ยกเลิกการขอให้รับรองตัวชี้วัด" : "ขอให้รับรองตัวชี้วัด"}
+							{isRequested ? "ยกเลิกการขอให้รับรองตัวชี้วัด" : "ขอให้รับรองตัวชี้วัด"}
 						</Button>
-						<Button onClick={startEdit} variant="primary" primaryColor="orange">แก้ไข</Button>
+						<Button onClick={startEdit} variant="primary" primaryColor="orange" disabled={lockEdit}>แก้ไข</Button>
 						</>
 					) : (
 						<>
