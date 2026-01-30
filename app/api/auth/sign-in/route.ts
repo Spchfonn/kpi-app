@@ -1,4 +1,4 @@
-// app/api/auth/login/route.ts
+// app/api/auth/sign-in/route.ts
 import bcrypt from "bcrypt";
 import { prisma } from "@/prisma/client";
 import { cookies } from "next/headers";
@@ -44,12 +44,13 @@ export async function POST(req: Request) {
 	// ADMIN CASE
 	// ===============================
 	if (user.isAdmin) {
-		return Response.json({
-			userId: user.id,
-			isAdmin: true,
-			redirectTo: "/admin",
-		});
-	}
+      return Response.json({
+         userId: user.id,
+         email: user.email,
+      isAdmin: true,
+         redirectTo: "/admin",
+      });
+   }
 
 	// ===============================
 	// NORMAL USER CASE
@@ -98,6 +99,7 @@ export async function POST(req: Request) {
 
 	return Response.json({
 		userId: user.id,
+		email: user.email,
 		employeeId: user.employeeId,
 		fullName,
 		cycle: {
