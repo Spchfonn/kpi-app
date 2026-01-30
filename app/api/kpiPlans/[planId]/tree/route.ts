@@ -41,7 +41,7 @@ const NodeSchema: z.ZodType<any> = z.lazy(() =>
 				ctx.addIssue({
 					code: "custom",
 					path: ["children"],
-					message: "GROUP must have at least 1 child",
+					message: "ไม่สามารถบันทึกได้ เนื่องจากกลุ่ม KPI ต้องมีรายการย่อยอย่างน้อย 1 รายการ",
 				});
 			}
 
@@ -83,21 +83,21 @@ const NodeSchema: z.ZodType<any> = z.lazy(() =>
 				ctx.addIssue({
 					code: "custom",
 					path: ["typeId"],
-					message: "ITEM must have typeId",
+					message: "ไม่สามารถบันทึกได้ เนื่องจากรายการ KPI ต้องมีการระบุประเภท",
 				});
 			}
 			if (!n.startDate) {
 				ctx.addIssue({
 					code: "custom",
 					path: ["startDate"],
-					message: "ITEM must have startDate",
+					message: "ไม่สามารถบันทึกได้ เนื่องจากรายการ KPI ต้องกำหนดช่วงเวลาเริ่มต้นและสิ้นสุด",
 				});
 			}
 			if (!n.endDate) {
 				ctx.addIssue({
 					code: "custom",
 					path: ["endDate"],
-					message: "ITEM must have endDate",
+					message: "ไม่สามารถบันทึกได้ เนื่องจากรายการ KPI ต้องกำหนดช่วงเวลาเริ่มต้นและสิ้นสุด",
 				});
 			}
 
@@ -143,7 +143,7 @@ function round2(n: number) {
 function validateWeightsSum100(arr: any[], where: string) {
 	const sum = round2(arr.reduce((s, x) => s + Number(x.weightPercent ?? 0), 0));
 	if (sum !== 100) {
-		throw new Error(`${where} weights must sum to 100 (got ${sum})`);
+		throw new Error(`ไม่สามารถบันทึกได้ กรุณาตรวจสอบค่าน้ำหนัก`);
 	}
 }
 

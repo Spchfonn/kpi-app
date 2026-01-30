@@ -1,7 +1,8 @@
 "use client";
-import { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { FiHome, FiUser, FiBell, FiClock, FiX, FiRepeat, FiKey, FiLogOut } from "react-icons/fi";
+import NotificationPanel from '../NotificationPanel';
 import { useRouter } from "next/navigation";
 import ConfirmBox from '../ConfirmBox';
 
@@ -84,8 +85,26 @@ const UserNavBarForDefineKpi = ({ onOpenNoti, onCloseNoti, unreadCount, }: {
 
 	const confirmSignOut = async () => {
 		setOpenSignOut(false);
-	  
-		// TODO: call api sign out
+      try {
+         // 1. เรียก API เพื่อลบ Session ใน Database และลบ Cookie
+         await fetch("/api/auth/sign-out", {
+            method: "POST",
+         });
+
+         // 2. ลบข้อมูลฝั่ง Client (LocalStorage)
+         localStorage.removeItem("user");
+         localStorage.removeItem("selectedRole");
+
+         // 3. Redirect ไปหน้า Login
+         // router.refresh() ใช้เพื่อให้ Server Component รู้ว่า Cookie หายไปแล้ว (เคลียร์ Cache หน้าเว็บ)
+         router.refresh(); 
+         router.push("/sign-in");
+         
+      } catch (error) {
+         console.error("Logout error:", error);
+         // หากเกิด Error ก็บังคับกลับไปหน้า Login
+         router.push("/sign-in");
+      }
 	};
 
 	return (

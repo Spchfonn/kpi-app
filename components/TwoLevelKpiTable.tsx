@@ -1,5 +1,5 @@
 "use client";
-import React, { useMemo, useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { FiChevronDown, FiChevronRight, FiPlusCircle, FiTrash2, FiArrowUp, FiArrowDown, FiCheck } from "react-icons/fi";
 import KpiDetailsBar from "./KpiDetailsBar";
 import ScoreBoxForQuantitativeKpi from "./ScoreBoxForQuantitativeKpi";
@@ -36,7 +36,12 @@ export type KpiTreeNode = {
 };
 
 const uid = () => Math.random().toString(36).slice(2, 10);
-const nodeKey = (n: KpiTreeNode) => n.id ?? n.clientId!;
+
+const nodeKey = (n: KpiTreeNode) =>
+  n.id ??
+  n.clientId ??
+  n.displayNo ??
+  (() => { throw new Error("Node has no stable key"); })();
 
 function CheckBox({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
 	return (
