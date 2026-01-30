@@ -66,6 +66,8 @@ type Props = {
 	tree: KpiTreeNode[];
   
 	scores: Record<string, EvalScoreState>; // key = nodeKey(item)
+	itemByNode?: Record<string, { score0to5: number; percentLocal: number }>;
+	groupByNode?: Record<string, { score0to5: number; percentGlobal: number }>;
 	onChangeScores: React.Dispatch<React.SetStateAction<Record<string, EvalScoreState>>>;
 };
 
@@ -82,10 +84,12 @@ export default function TwoLevelKpiTableForEvaluateKpi({
 	showAllDetails,
 	tree,
 	scores,
+	itemByNode,
+	groupByNode,
 	onChangeScores
   }: Props) {
 
-	const colClass = "grid grid-cols-[1fr_100px_100px_110px] items-center"
+	const colClass = "grid grid-cols-[1fr_100px_100px_100px] items-center"
 
 	const detailsMode: "view" | "edit" = readOnlyDetails ? "view" : mode;
 
@@ -150,8 +154,8 @@ export default function TwoLevelKpiTableForEvaluateKpi({
 					<div className={`${colClass} place-items-center`}>
 						<div>ตัวชี้วัด</div>
 						<div>ค่าน้ำหนัก</div>
-						<div>คะแนน</div>
-						<div>ความสัมพันธ์</div>
+						<div>เกณฑ์ที่ได้</div>
+						<div>คะแนนที่ได้ (%)</div>
 					</div>
 				</div>
 			</div>
@@ -160,6 +164,7 @@ export default function TwoLevelKpiTableForEvaluateKpi({
 			<div className="mt-2 space-y-2 text-body-changed font-medium">
 				{tree.map((p) => {
 					const pKey = nodeKey(p);
+					const parentComputedPercent = groupByNode?.[pKey];
 					return (
 						<div key={pKey}>
 							{/* parent row */}
@@ -182,14 +187,17 @@ export default function TwoLevelKpiTableForEvaluateKpi({
 									</div>
 
 									<div className="flex items-center justify-center text-myApp-blueDark">
-										<span className="text-body font-medium">{p.weightPercent}%</span>
+										<span className="font-medium">{p.weightPercent}%</span>
 									</div>
 
 									<div></div>
 
 									<div className="flex items-center justify-center text-myApp-blueDark">
-										{/* <span>{p.relation}</span> */}
+										{parentComputedPercent ? 
+										<span className="font-semibold">{parentComputedPercent.percentGlobal.toFixed(2)}%</span> : 
+										<span>-</span>}
 									</div>
+
 								</div>
 							</div>
 
@@ -211,6 +219,12 @@ export default function TwoLevelKpiTableForEvaluateKpi({
 														}))
 														: [];
 
+										const scale = t?.rubric?.kind === "QUANTITATIVE_1_TO_5"
+														? { kind: t.rubric.kind, levels: t.rubric.levels }
+														: undefined;
+
+										const childComputedPercent = itemByNode?.[cKey];
+
 										return (
 											<div key={cKey} className="bg-myApp-white rounded-xl shadow-sm px-4 py-3 ml-10">
 												<div className={`${colClass}`}>
@@ -229,6 +243,7 @@ export default function TwoLevelKpiTableForEvaluateKpi({
 															mode={mode}
 															kpiType={legacyType}
 															score={s.score}
+															scale={scale}
 															criteria={criteria}
 															checkedIds={s.checkedIds ?? []}
 															onScoreChange={(next) => setItemScore(cKey, { score: next })}
@@ -236,9 +251,14 @@ export default function TwoLevelKpiTableForEvaluateKpi({
 														/>
 													</div>
 
-													<div className="flex items-center justify-center text-myApp-blueDark">
-														{/* <span>{c.relation}</span> */}
+													<div className="text-center text-myApp-blueLight font-semibold">
+													{childComputedPercent ? (
+														<span>{childComputedPercent.percentLocal.toFixed(2)}%</span>
+													) : (
+														<span>-</span>
+													)}
 													</div>
+
 												</div>
 
 												{showAllDetails && (

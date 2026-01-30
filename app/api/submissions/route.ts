@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/prisma/client";
+import { requireUser } from "@/app/lib/auth";
+import { AssignmentEvalStatus } from "@prisma/client";
 
 type EvalScoreState = {
 	score: number | "";
@@ -43,6 +45,8 @@ function calcQualitativeScoreFromRubric(rubric: any, checkedIds: string[]) {
 
 export async function PUT(req: Request) {
 	try {
+		const user = await requireUser();
+
 		const body: PutBody = await req.json();
 		const planId: string | undefined = body.planId;
 		const scores: Record<string, EvalScoreState> | undefined = body.scores;
@@ -57,6 +61,22 @@ export async function PUT(req: Request) {
 		const nodeIds = Object.keys(scores);
 		if (nodeIds.length === 0) {
 			return NextResponse.json({ ok: true, message: "No scores to save", data: { count: 0 } }, { status: 200 });
+		}
+
+		// 0) guard: assignment SUBMITTED, cannot edit
+		const plan = await prisma.kpiPlan.findUnique({
+			where: { id: planId },
+			select: {
+				id: true,
+				assignmentId: true,
+				assignment: { select: { evalStatus: true } },
+			},
+		});
+		if (!plan) {
+			return NextResponse.json({ ok: false, message: "Plan not found" }, { status: 404 });
+		}
+		if (plan.assignment?.evalStatus === "SUBMITTED") {
+			return NextResponse.json({ ok: false, message: "ส่งผลการประเมินแล้ว ไม่สามารถแก้ไขได้" }, { status: 400 });
 		}
 
 		// 1) validate nodes belong to plan + only ITEM
@@ -146,6 +166,14 @@ export async function PUT(req: Request) {
 					select: { id: true },
 				});
 			}
+
+			// set assignment.evalStatus = IN_PROGRESS
+			await tx.evaluationAssignment.update({
+				where: { id: plan.assignmentId },
+				data: {
+				  	evalStatus: plan.assignment.evalStatus === "NOT_STARTED" ? ("IN_PROGRESS" as AssignmentEvalStatus) : undefined,
+				},
+			});
 	  
 			return { createdCount: nodeIds.length };
 		});
@@ -161,7 +189,7 @@ export async function PUT(req: Request) {
 			{ status: 500 }
 		);
 	}
-}
+}	
 
 export async function GET(req: Request) {
 	try {

@@ -1,8 +1,8 @@
 "use client";
-import DefinedStatus from '@/components/DefinedStatus';
+import EvaluatedStatus from '@/components/EvaluatedStatus';
 import EvaluateeCardForEvaluateKpi from '@/components/EvaluateeCardForEvaluateKpi';
 import { useRouter } from 'next/navigation';
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 type LoginUser = {
 	employeeId: string;
@@ -65,8 +65,7 @@ export default function Page({ params }: { params: { id: string } })  {
 			<div className='flex items-center mb-3'>
 				<p className='text-title font-medium text-myApp-blueDark'>ผู้รับการประเมิน ({loading ? "-" : items.length})</p>
 				<div className='ml-auto flex'>
-					{/* TODO: change to evaluate status */}
-					<DefinedStatus/>
+					<EvaluatedStatus/>
 				</div>
 			</div>
 

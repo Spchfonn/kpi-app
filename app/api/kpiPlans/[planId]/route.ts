@@ -61,6 +61,7 @@ export async function GET(
 				version: true,
 				status: true,
 				updatedAt: true,
+				confirmRequestedAt: true,
 				nodes: {
 					orderBy: [
 						{ parentId: "asc" },
@@ -92,6 +93,7 @@ export async function GET(
 				version: plan.version,
 				status: plan.status,
 				updatedAt: plan.updatedAt,
+				confirmRequestedAt: plan.confirmRequestedAt,
 				tree,
 			},
 		},
