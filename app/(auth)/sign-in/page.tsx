@@ -48,7 +48,8 @@ export default function LoginPage() {
 
 		if (!res.ok) {
 			const err = await res.json();
-			setError(err.message ?? "เข้าสู่ระบบไม่สำเร็จ");
+			const msg = err.message ?? "เข้าสู่ระบบไม่สำเร็จ";
+			setError(msg);
 			return;
 		}
 
@@ -124,6 +125,12 @@ export default function LoginPage() {
 								onChange={(e) => setPassword(e.target.value)}
 							/>
 						</div>
+
+						{error && (
+							<div className="w-[80%] p-2 text-center text-sm text-red-600">
+								{error}
+							</div>
+						)}
 
 						<button 
 							onClick={handleLogin}

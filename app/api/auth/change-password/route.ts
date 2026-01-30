@@ -7,16 +7,24 @@ try {
     const { email, currentPassword, newPassword } = await req.json();
 
     // 1. validate input
-    if (!email || !currentPassword || !newPassword) {
+    if (!email) {
+          return Response.json(
+            { message: "เกิดข้อผิดพลาดกรุณาลองอีกครั้ง" },
+            { status: 400 }
+          );
+        }
+
+    // 2. เช็ค Input ของรหัสผ่าน (ถ้าไม่มี แสดงว่าผู้ใช้ลืมกรอก)
+    if (!currentPassword || !newPassword) {
       return Response.json(
-        { message: "Missing required fields" },
+        { message: "กรุณากรอกรหัสผ่านให้ครบ" },
         { status: 400 }
       );
     }
 
     if (newPassword.length < 6) {
       return Response.json(
-        { message: "Password must be at least 6 characters" },
+        { message: "รหัสผ่านต้องมีอย่างน้อย 6 ตัว" },
         { status: 400 }
       );
     }
@@ -49,7 +57,7 @@ try {
     });
 
     return Response.json({
-      message: "Password changed successfully",
+      message: "เปลี่ยนรหัสผ่านสำเร็จ",
     });
   }
   catch (error) {

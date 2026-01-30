@@ -81,7 +81,7 @@ const handleSave = async () => {
       }
 
       // สำเร็จ
-      setSuccess("เปลี่ยนรหัสผ่านสำเร็จ!");
+      setSuccess("เปลี่ยนรหัสผ่านสำเร็จ");
       
       setCurrentPassword("");
       setNewPassword("");
@@ -121,9 +121,6 @@ const handleSave = async () => {
                 <h1 className="text-center text-myApp-blueDark text-title font-medium mb-6">
                     เปลี่ยนรหัสผ่าน
                 </h1>
-
-                {error && <div className="text-red-500 text-center mb-4">{error}</div>}
-                {success && <div className="text-green-600 text-center mb-4">{success}</div>}
                 
                 <div className="w-full flex flex-col items-center space-y-5">
 
@@ -157,13 +154,16 @@ const handleSave = async () => {
                         />
                     </div>
 
+                    {error && <div className="text-red-500 text-center mb-4">{error}</div>}
+                    {success && <div className="text-green-600 text-center mb-4">{success}</div>}
+
                     <button 
                         onClick={handleSave}
                         disabled={loading}
                         className={`w-[50%] h-11 rounded-3xl bg-myApp-blue text-button text-white font-medium mt-2 shadow-sm 
                         ${loading ? "opacity-50 cursor-not-allowed" : "hover:opacity-95"}`}
                     >
-                        {loading ? "กำลังบันทึก..." : "บันทึก"}
+                        บันทึก
                     </button>
                 </div>
             </div>
