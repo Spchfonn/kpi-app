@@ -122,10 +122,7 @@ const getNodeKey = (n: Node) => n.id || n.displayNo || "";
 
 const page = () => {
 	const router = useRouter();
-	const { cycleId, evaluateeId } = useParams<{
-		cycleId: string;
-		evaluateeId: string;
-	}>();
+	const { cycleId, planId } = useParams<{ cycleId: string; planId: string; }>();
 	const [evaluateeName, setEvaluateeName] = useState<string>("");
 	const [employeeData, setEmployeeData] = useState<any>(null);
 
@@ -139,15 +136,13 @@ const page = () => {
 	const [confirmStatus, setConfirmStatus] = useState<PlanConfirmStatus>("DRAFT");
 	const [confirmTarget, setConfirmTarget] = useState<PlanConfirmTarget>(null);
 
-	const [planId, setPlanId] = useState<string | null>(null);
+	const canAct = confirmStatus === "REQUESTED" && confirmTarget === "EVALUATEE";
+
 	const [types, setTypes] = useState<KpiType[]>([]);
 	const [tree, setTree] = useState<Node[]>([]);
 
 	// for handle if click cancel in edit mode
 	const [draftTree, setDraftTree] = useState<Node[]>([]);
-
-	// for confirm delete
-	const [confirmOpenDelete, setConfirmOpenDelete] = useState(false);
 
 	// for confirm send noti
 	const [confirmOpenConfirm, setConfirmOpenConfirm] = useState(false);
@@ -156,7 +151,6 @@ const page = () => {
 	const [cycleStartIso, setCycleStartIso] = useState<string>("");
 	const [cycleEndIso, setCycleEndIso] = useState<string>("");
 
-	// get plan for DB
 	useEffect(() => {
 		(async () => {
 			setLoading(true);
@@ -169,39 +163,10 @@ const page = () => {
 					return;
 				}
 		
-				// (optional) check role
-				// const role = localStorage.getItem("activeRole");
-				// if (role !== "EVALUATOR") router.push("/sign-in/selectRole");
-		
-				const cyclePublicId = cycleId;
-				const evaluatorId = u.employeeId;
-		
-				// 1) resolvePlan -> get planId
-				const resResolve = await fetch(
-					`/api/evaluationAssignments/resolvePlan?cyclePublicId=${encodeURIComponent(
-						cyclePublicId
-					)}&evaluatorId=${encodeURIComponent(evaluatorId)}&evaluateeId=${encodeURIComponent(
-						evaluateeId
-					)}`,
-					{ cache: "no-store" }
-				);
-
-				const jResolve = await resResolve.json();
-				if (!jResolve.ok) throw new Error(jResolve.message ?? "resolvePlan failed");
-
-				const c = jResolve.data.cycle;
-				setCycleStartIso(c.startDate); // ISO string
-				setCycleEndIso(c.endDate);
-
-				setEvaluateeName(jResolve.data.evaluatee?.fullNameTh ?? "");
-
-				const pid = jResolve.data.planId as string;
-				setPlanId(pid);
-		
-				// 2) get kpiTypes + plan tree (parallel)
+				// 1) load kpiTypes + plan
 				const [resTypes, resPlan] = await Promise.all([
 					fetch("/api/kpiTypes", { cache: "no-store" }),
-					fetch(`/api/kpiPlans/${pid}`, { cache: "no-store" }),
+					fetch(`/api/kpiPlans/${planId}`, { cache: "no-store" }),
 				]);
 		
 				const jTypes = await resTypes.json();
@@ -210,12 +175,20 @@ const page = () => {
 				if (jTypes.ok) setTypes(jTypes.data as KpiType[]);
 				if (!jPlan.ok) throw new Error(jPlan.message ?? "get plan failed");
 		
-				const loadedTree: Node[] = (jPlan.data.tree ?? []).map(normalizeNode);
-		
-				setTree(loadedTree);
-				setDraftTree(loadedTree); // initial draft
+				// 2) set data from plan
 				setConfirmStatus((jPlan.data.confirmStatus ?? "DRAFT") as PlanConfirmStatus);
 				setConfirmTarget((jPlan.data.confirmTarget ?? null) as PlanConfirmTarget);
+		
+				// ถ้าใน plan api มี cycle info / evaluatee info ก็ใช้เลย (แล้วไม่ต้อง resolvePlan)
+				// เช่น jPlan.data.cycle.startDate / endDate
+				if (jPlan.data.cycle?.startDate) setCycleStartIso(jPlan.data.cycle.startDate);
+				if (jPlan.data.cycle?.endDate) setCycleEndIso(jPlan.data.cycle.endDate);
+		
+				if (jPlan.data.evaluatee?.fullNameTh) setEvaluateeName(jPlan.data.evaluatee.fullNameTh);
+		
+				const loadedTree: Node[] = (jPlan.data.tree ?? []).map(normalizeNode);
+				setTree(loadedTree);
+				setDraftTree(loadedTree);
 			} catch (e: any) {
 				console.error(e);
 				setError(e?.message ?? "โหลดข้อมูลไม่สำเร็จ");
@@ -223,7 +196,7 @@ const page = () => {
 				setLoading(false);
 			}
 		})();
-	}, [evaluateeId, router]);
+	}, [planId, router]);
 
 	const confirmKpi = async () => {
 		if (!planId) return;
@@ -307,24 +280,27 @@ const page = () => {
 					</Button>
 				)}
 				
-				<div className="flex ml-auto gap-2.5">
-					<Button 
-						variant="primary"
-						primaryColor="red"
-						onClick={() => {setConfirmOpenReject(true)}}
-						disabled={saving}
-					>
-						ปฏิเสธการรับรองตัวชี้วัด
-					</Button>
-					<Button 
-						variant="primary"
-						primaryColor="green"
-						onClick={() => {setConfirmOpenConfirm(true)}}
-						disabled={saving}
-					>
-						รับรองตัวชี้วัด
-					</Button>
-				</div>
+				{canAct &&
+					<div className="flex ml-auto gap-2.5">
+						<Button 
+							variant="primary"
+							primaryColor="red"
+							onClick={() => {setConfirmOpenReject(true)}}
+							disabled={saving}
+						>
+							ปฏิเสธการรับรองตัวชี้วัด
+						</Button>
+						<Button 
+							variant="primary"
+							primaryColor="green"
+							onClick={() => {setConfirmOpenConfirm(true)}}
+							disabled={saving}
+						>
+							รับรองตัวชี้วัด
+						</Button>
+					</div>
+				}
+				
 			</div>
 
 			{error && (
@@ -345,15 +321,6 @@ const page = () => {
   					defaultEndDate={cycleEndIso}
 				/>
 			</div>
-
-			<ConfirmBox
-				open={confirmOpenDelete}
-				message="ต้องการลบตัวชี้วัดแถวนี้ใช่หรือไม่?"
-				cancelText="ยกเลิก"
-				confirmText="ตกลง"
-				onCancel={() => setConfirmOpenDelete(false)}
-				onConfirm={() => setConfirmOpenDelete(false)}
-			/>
 
 			{/* confirm for send confirm kpi noti */}
 			<ConfirmBox

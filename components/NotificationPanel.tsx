@@ -31,7 +31,9 @@ export default function NotificationPanel({
   const [filter, setFilter] = useState<"all" | "unread">("all");
 
   const list = useMemo(() => {
-	if (filter === "unread") return notifications.filter((n) => n.unread);
+	if (filter === "unread") {
+		return notifications.filter((n) => n.unread && n.actionStatus === "OPEN");
+	}
 	return notifications;
   }, [filter, notifications]);
 

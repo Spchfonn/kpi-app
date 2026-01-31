@@ -45,11 +45,11 @@ type PlanConfirmStatus = "DRAFT" | "REQUESTED" | "CONFIRMED" | "REJECTED" | "CAN
 type PlanConfirmTarget = "EVALUATOR" | "EVALUATEE" | null;
 
 const PLAN_CONFIRM_UI: Record<PlanConfirmStatus, { label: string; className: string }> = {
-	DRAFT: { label: "ยังไม่กำหนดตัวชี้วัด", className: "text-myApp-red" },
-	REQUESTED: { label: "รอการอนุมัติ/รับรอง", className: "text-myApp-orange" },
-	CONFIRMED: { label: "กำหนดตัวชี้วัดสมบูรณ์", className: "text-myApp-green" },
-	REJECTED: { label: "ตัวชี้วัดถูกปฏิเสธ", className: "text-myApp-red" },
-	CANCELLED: { label: "ยกเลิกคำขอ", className: "text-myApp-blueDark" },
+	"DRAFT": { label: "ยังไม่กำหนดตัวชี้วัด", className: "text-myApp-red" },
+	"REQUESTED": { label: "รอการอนุมัติ/รับรอง", className: "text-myApp-orange" },
+	"CONFIRMED": { label: "กำหนดตัวชี้วัดสมบูรณ์", className: "text-myApp-green" },
+	"REJECTED": { label: "ตัวชี้วัดถูกปฏิเสธ", className: "text-myApp-red" },
+	"CANCELLED": { label: "ยกเลิกคำขอ", className: "text-myApp-blueDark" },
 };
 
 //

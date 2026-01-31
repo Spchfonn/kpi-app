@@ -28,7 +28,10 @@ export async function GET(req: Request) {
 		const cursor = searchParams.get("cursor"); // recipientId
 
 		const where: any = { userId: user.id };
-		if (status === "unread") where.readAt = null;
+		if (status === "unread") {
+			where.readAt = null;
+			where.actionStatus = "OPEN";
+		}
 		if (status === "read") where.readAt = { not: null };
 
 		const items = await prisma.notificationRecipient.findMany({
@@ -47,7 +50,7 @@ export async function GET(req: Request) {
 		const sliced = items.slice(0, take);
 
 		const unreadCount = await prisma.notificationRecipient.count({
-			where: { userId: user.id, readAt: null },
+			where: { userId: user.id, readAt: null, actionStatus: "OPEN", },
 		});
 
 		const dto = sliced.map((r) => {
