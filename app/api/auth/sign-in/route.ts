@@ -1,4 +1,4 @@
-// app/api/auth/login/route.ts
+// app/api/auth/sign-in/route.ts
 import bcrypt from "bcrypt";
 import { prisma } from "@/prisma/client";
 import { cookies } from "next/headers";
@@ -15,13 +15,13 @@ export async function POST(req: Request) {
 	});
 
 	if (!user || !user.isActive) {
-		return Response.json({ message: "Unauthorized" }, { status: 401 });
+		return Response.json({ message: "อีเมลนี้ไม่มีสิทธิ์เข้าใช้งานระบบ" }, { status: 401 });
 	}
 
 	// 2) password
 	const ok = await bcrypt.compare(password, user.passwordHash);
 	if (!ok) {
-		return Response.json({ message: "Unauthorized" }, { status: 401 });
+		return Response.json({ message: "รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง" }, { status: 401 });
 	}
 
 	// 3) create session + set cookie (ทำก่อน return ทุกเคส)
@@ -44,12 +44,13 @@ export async function POST(req: Request) {
 	// ADMIN CASE
 	// ===============================
 	if (user.isAdmin) {
-		return Response.json({
-			userId: user.id,
-			isAdmin: true,
-			redirectTo: "/admin",
-		});
-	}
+      return Response.json({
+         userId: user.id,
+         email: user.email,
+      isAdmin: true,
+         redirectTo: "/admin",
+      });
+   }
 
 	// ===============================
 	// NORMAL USER CASE
@@ -80,7 +81,7 @@ export async function POST(req: Request) {
 
 	if (assignments.length === 0) {
 		return Response.json(
-			{ message: "No permission in this cycle" },
+			{ message: "คุณไม่มีสิทธิ์การเข้าถึงในรอบการประเมินนี้" },
 			{ status: 403 }
 		);
 	}
@@ -98,6 +99,7 @@ export async function POST(req: Request) {
 
 	return Response.json({
 		userId: user.id,
+		email: user.email,
 		employeeId: user.employeeId,
 		fullName,
 		cycle: {
