@@ -4,21 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="efa7c69f-6049-41ab-9563-086e6e42c610" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/(app)/[cycleId]/evaluator/defineKpi/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(app)/[cycleId]/evaluator/defineKpi/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/(app)/[cycleId]/evaluator/evaluateKpi/layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(app)/[cycleId]/evaluator/evaluateKpi/layout.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/kpiPlans/[planId]/cancelRequestConfirm/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/kpiPlans/[planId]/cancelRequestConfirm/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/kpiPlans/[planId]/confirm/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/kpiPlans/[planId]/confirm/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/kpiPlans/[planId]/reject/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/kpiPlans/[planId]/reject/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/kpiPlans/[planId]/requestConfirm/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/kpiPlans/[planId]/requestConfirm/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/notifications/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/notifications/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/components/EvaluateeCardForDefineKpi.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/EvaluateeCardForDefineKpi.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/components/NotificationPanel.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/NotificationPanel.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/components/NotificationProvider.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/NotificationProvider.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/components/user/UserNavBarForEvaluateKpi.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/user/UserNavBarForEvaluateKpi.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/prisma/schema.prisma" beforeDir="false" afterPath="$PROJECT_DIR$/prisma/schema.prisma" afterDir="false" />
-    </list>
+    <list default="true" id="efa7c69f-6049-41ab-9563-086e6e42c610" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
