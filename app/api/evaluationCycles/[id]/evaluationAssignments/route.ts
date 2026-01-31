@@ -31,6 +31,7 @@ export async function GET(
 	const assignments = await prisma.evaluationAssignment.findMany({
 		where: { cycleId },
 		select: {
+			weightPercent: true,
 			evaluator: {
 				select: {
 					id: true,
@@ -71,7 +72,10 @@ export async function GET(
 			const evaluatees = uniqBy(
 				assignments
 				.filter((a) => a.evaluator?.id === ev.id)
-				.map((a) => a.evaluatee)
+				.map((a) => ({
+					...a.evaluatee!,
+					weightPercent: a.weightPercent ?? 0,
+				}))
 				.filter(Boolean),
 				(u) => u.id
 			);
@@ -94,7 +98,10 @@ export async function GET(
 		const evaluators = uniqBy(
 			assignments
 				.filter((a) => a.evaluatee?.id === ee.id)
-				.map((a) => a.evaluator)
+				.map((a) => ({
+					...a.evaluator!,
+					weightPercent: a.weightPercent ?? 0,
+				}))
 				.filter(Boolean),
 			(u) => u.id
 		);

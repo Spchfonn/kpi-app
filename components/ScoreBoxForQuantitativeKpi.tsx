@@ -4,7 +4,7 @@ import React from "react";
 export type QuantitativeLevel = {
   score: number;
   value: number | "";
-  unit?: string | null;
+  unit: string | null;
 };
 
 type Props = {
@@ -24,9 +24,7 @@ export default function ScoreBoxForQuantitativeKpi({
   const getValue = (lvl: 1 | 2 | 3 | 4 | 5) =>
     levels.find((x) => Number(x.score) === lvl)?.value ?? "";
 
-  const unit =
-    levels.find((x) => x.unit != null)?.unit ??
-    null;
+  const unit: string | null = levels.find((x) => x.unit != null)?.unit ?? null;
 
   const setValue = (lvl: 1 | 2 | 3 | 4 | 5, v: string) => {
     const num: number | "" = v === "" ? "" : Number(v);

@@ -26,6 +26,20 @@ export default function BasicTab({ draft, setDraft, mode, filterValue, filterOpt
 			/>
 
 			<Input
+				label="ปีการประเมิน"
+				value={draft.year}
+				onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+				disabled={disabled}
+			/>
+
+			<Input
+				label="รอบการประเมิน"
+				value={draft.round}
+				onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+				disabled={disabled}
+			/>
+
+			<Input
 				label="วันเริ่มต้น"
 				type="date"
 				value={draft.startDate}
