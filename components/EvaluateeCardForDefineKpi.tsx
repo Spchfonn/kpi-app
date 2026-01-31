@@ -46,7 +46,7 @@ function PillButton({
 	);
   }
 
-export default function EvaluateeCardForDefineKpi({
+export default function EmployeeCardForDefineKpi({
   id,
   name,
   title,

@@ -1,8 +1,11 @@
 "use client";
+import Link from "next/link";
+import { useParams } from "next/navigation";
 import React, { useMemo, useState } from "react";
 import { FiBell, FiCheck, FiX, FiFeather } from "react-icons/fi";
 
 type NotiType = "info" | "success" | "error" | "pending";
+type NotiActionStatus = "OPEN" | "DONE" | "CANCELLED";
 
 export type Notification = {
   id: string;
@@ -10,6 +13,7 @@ export type Notification = {
   title: string;
   timeLabel: string; // "1 hour ago" / "24/11/2025"
   unread?: boolean;
+  actionStatus: NotiActionStatus;
 };
 
 const TYPE_STYLE: Record<NotiType, { bar: string; icon: React.ReactNode }> = {
@@ -73,12 +77,21 @@ export default function NotificationPanel({
 function NotificationItem({ item }: { item: Notification }) {
   const style = TYPE_STYLE[item.type];
 
+  const { cycleId } = useParams() as { cycleId: string };
+  const href = `/${cycleId}/notifications/${item.id}`;
+
+  const isActionable = item.actionStatus === "OPEN";
+
   return (
-	<div
+	<Link
+	  href={href}
 	  className={`
-		relative rounded-xl shadow-sm overflow-hidden
+		block relative rounded-xl shadow-sm overflow-hidden
 		${item.unread ? "bg-myApp-white" : "bg-myApp-shadow/50"}
+		${!isActionable ? "opacity-70 pointer-events-none" : "hover:ring-2 hover:ring-myApp-shadow/40"}
 	  `}
+	  aria-disabled={!isActionable}
+      tabIndex={!isActionable ? -1 : 0}
 	>
 		{/* left color bar */}
 		<div className={`absolute left-0 top-0 h-full w-13 ${style.bar}`} />
@@ -98,8 +111,14 @@ function NotificationItem({ item }: { item: Notification }) {
 				<div className="text-right mt-2 text-smallBody font-medium text-myApp-grey">
 					{item.timeLabel}
 				</div>
+
+				{!isActionable && (
+					<div className="text-smallTitle text-myApp-red">
+						{item.actionStatus === "CANCELLED" ? "คำขอนี้ถูกยกเลิกแล้ว" : "ดำเนินการแล้ว"}
+					</div>
+				)}
 			</div>
 		</div>
-	</div>
+	</Link>
   );
 }
