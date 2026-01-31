@@ -257,6 +257,8 @@ model Notification {
   meta       Json?
   actor      Employee?               @relation("NotificationActor", fields: [actorId], references: [id])
   recipients NotificationRecipient[]
+  refPlanId       String?
+  refAssignmentId String?
 
   @@index([type])
   @@index([createdAt])
@@ -271,9 +273,12 @@ model NotificationRecipient {
   createdAt      DateTime     @default(now())
   notification   Notification @relation(fields: [notificationId], references: [id])
   user   User @relation(fields: [userId], references: [id], map: "NotificationRecipient_userId_fkey_v2")
+  actionStatus   NotificationActionStatus @default(OPEN)
+  actionAt       DateTime?
 
   @@unique([notificationId, userId])
   @@index([userId, readAt])
+  @@index([userId, actionStatus])
 }
 
 model Session {
@@ -351,4 +356,10 @@ enum NotificationType {
   EVALUATOR_APPROVE_EVALUATEE_KPI
   EVALUATOR_REJECT_EVALUATEE_KPI
   EVALUATOR_CANCEL_REQUEST_EVALUATEE_CONFIRM_KPI
+}
+
+enum NotificationActionStatus {
+  OPEN
+  DONE
+  CANCELLED
 }

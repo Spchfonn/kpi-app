@@ -5,7 +5,8 @@ type ApiItem = {
 	id: string; // recipientId
 	type: string;
 	title: string;
-	timeLabel: string | Date;
+	timeLabel?: string | Date | null;
+	createAt?: string | Date | null;
 	unread: boolean;
 	meta?: any;
 	actor?: any;
@@ -28,15 +29,32 @@ type Ctx = {
 
 const C = createContext<Ctx | null>(null);
 
-function toTimeLabel(d: string | Date) {
-	const dt = typeof d === "string" ? new Date(d) : d;
-	return dt.toLocaleString();
+function toTimeLabel(v?: string | Date | null) {
+	if (!v) return "-";
+  
+	const d = typeof v === "string" ? new Date(v) : v;
+	if (!(d instanceof Date)) return "-";
+  
+	const t = d.getTime();
+	return Number.isNaN(t) ? "-" : d.toLocaleString();
 }
-
-function mapType(t: string): ApiItem["type"] {
-	if (t === "PENDING" || t === "pending") return "pending";
-	if (t === "SUCCESS" || t === "success") return "success";
-	return "error";
+  
+function mapType(t: string): "pending" | "success" | "error" {
+	const x = (t ?? "").toLowerCase();
+  
+	if (x.includes("request") || x.includes("pending")) return "pending";
+	if (x.includes("confirm") || x.includes("approved") || x.includes("success")) return "success";
+	if (x.includes("reject") || x.includes("error")) return "error";
+  
+	return "pending";
+}
+  
+function normalize(items: ApiItem[]): ApiItem[] {
+	return (items ?? []).map((it) => ({
+		...it,
+		type: mapType(it.type),
+		timeLabel: toTimeLabel(it.timeLabel ?? it.createAt),
+	}));
 }
 
 async function fetchNoti(params: { status: "all" | "unread" | "read"; take?: number; cursor?: string | null }) {
@@ -62,7 +80,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 		setLoading(true);
 		try {
 			const data = await fetchNoti({ status: useStatus, take: 20, cursor: null });
-			setNotifications(data.items ?? []);
+			setNotifications(normalize(data.items ?? []));
 			setUnreadCount(data.unreadCount ?? 0);
 			setNextCursor(data.nextCursor ?? null);
 			setStatus(useStatus);
@@ -76,19 +94,22 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 		setLoading(true);
 		try {
 			const data = await fetchNoti({ status, take: 20, cursor: nextCursor });
-			setNotifications((prev) => [...prev, ...(data.items ?? [])]);
+			setNotifications((prev) => [...prev, ...normalize(data.items ?? [])]);
 			setUnreadCount(data.unreadCount ?? 0);
 			setNextCursor(data.nextCursor ?? null);
 		} finally {
 			setLoading(false);
 		}
-		}, [nextCursor, loading, status]);
+	}, [nextCursor, loading, status]);
 	
-		useEffect(() => {
+	useEffect(() => {
 		refetch("all");
+	}, [refetch]);
+	  
+	useEffect(() => {
 		const t = setInterval(() => refetch(status), 30_000);
 		return () => clearInterval(t);
-	}, []); // eslint-disable-line
+	}, [refetch, status]);
   
 	const value = useMemo(() => ({ notifications, unreadCount, nextCursor, loading, refetch, loadMore }), [
 		notifications,

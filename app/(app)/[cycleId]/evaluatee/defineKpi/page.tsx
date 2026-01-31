@@ -23,7 +23,7 @@ type Item = {
 	assignmentId: string;
 	currentPlanId: string | null;
 	weightPercent: string;
-	evaluatee: {
+	evaluator: {
 		id: string;
 		fullName: string;
 		title: string;
@@ -48,7 +48,7 @@ export default function Page({ params }: { params: { id: string } })  {
 
 			setLoading(true);
 			const res = await fetch(
-				`/api/evaluationAssignments/evaluatees?cyclePublicId=${encodeURIComponent(u.cycle.id)}&evaluatorId=${encodeURIComponent(u.employeeId)}`,
+				`/api/evaluationAssignments/evaluators?cyclePublicId=${encodeURIComponent(u.cycle.id)}&evaluateeId=${encodeURIComponent(u.employeeId)}`,
 				{ cache: "no-store" }
 			);
 			const j = await res.json();
@@ -61,7 +61,7 @@ export default function Page({ params }: { params: { id: string } })  {
 	<>
 		<div className='px-20 py-7.5'>
 			<div className='flex items-center mb-3'>
-				<p className='text-title font-medium text-myApp-blueDark'>ผู้รับการประเมิน ({loading ? "-" : items.length})</p>
+				<p className='text-title font-medium text-myApp-blueDark'>ผู้ประเมิน ({loading ? "-" : items.length})</p>
 				<div className='ml-auto flex'>
 					<DefinedStatus/>
 				</div>
@@ -70,10 +70,10 @@ export default function Page({ params }: { params: { id: string } })  {
 			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 				{items.map((x) => (
 					<EmployeeCardForDefineKpi
-						key={x.evaluatee.id}
-						id={x.evaluatee.id}
-						name={x.evaluatee.fullName}
-						title={x.evaluatee.title}
+						key={x.evaluator.id}
+						id={x.evaluator.id}
+						name={x.evaluator.fullName}
+						title={x.evaluator.title}
 					/>
 				))}
 			</div>
