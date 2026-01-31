@@ -13,8 +13,8 @@ function Shell({ children }: { children: React.ReactNode }) {
 		<UserNavBarForEvaluateKpi
 			unreadCount={unreadCount}
 			onOpenNoti={() => {
-			setOpenNoti(true);
-			refetch("all"); // optional ให้สดตอนเปิด
+				setOpenNoti(true);
+				refetch("all");
 			}}
 			onCloseNoti={() => setOpenNoti(false)}
 		/>
