@@ -5,7 +5,7 @@ export async function GET() {
 	try {
 		const user = await requireUser();
 		const unreadCount = await prisma.notificationRecipient.count({
-			where: { userId: user.id, readAt: null },
+			where: { userId: user.id, readAt: null, actionStatus: "OPEN", },
 		});
 		return Response.json({ unreadCount });
 	} catch (e: any) {

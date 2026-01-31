@@ -1,10 +1,10 @@
 import { AuthError, requireUser } from "@/app/lib/auth";
 import { prisma } from "@/prisma/client";
 
-export async function PATCH(_req: Request, ctx: { params: { recipientId: string } }) {
+export async function PATCH(_req: Request, ctx: { params: Promise<{ recipientId: string }> }) {
 	try {
 		const user = await requireUser();
-		const { recipientId } = ctx.params;
+		const { recipientId } = await ctx.params;
 
 		// ownership check
 		const rec = await prisma.notificationRecipient.findUnique({

@@ -46,6 +46,17 @@ function buildTreeWithDisplayNo(flatNodes: any[]) {
 	return roots;
 }
 
+const PREFIX_TH: Record<"MR" | "MRS" | "MS", string> = { MR: "นาย", MRS: "นาง", MS: "นางสาว" };
+
+function buildEmployeeName(e: any) {
+	if (!e) return "-";
+	const p = e.prefixName as "MR" | "MRS" | "MS" | null | undefined;
+	const prefixTh = p ? PREFIX_TH[p] : "";
+	const first = e.name ?? "";
+	const last = e.lastName ? ` ${e.lastName}` : "";
+	return `${prefixTh}${first}${last}`.trim() || e.employeeNo || "-";
+}
+
 export async function GET(
 	_request: Request,
 	ctx: { params: Promise<{ planId: string }> }
@@ -62,6 +73,15 @@ export async function GET(
 				status: true,
 				updatedAt: true,
 				confirmRequestedAt: true,
+				confirmStatus: true,
+    			confirmTarget: true,
+				assignment: {
+					select: {
+						cycle: { select: { startDate: true, endDate: true } },
+						evaluatee: { select: { prefixName: true, name: true, lastName: true, employeeNo: true } },
+						evaluator: { select: { prefixName: true, name: true, lastName: true, employeeNo: true } },
+					},
+				},
 				nodes: {
 					orderBy: [
 						{ parentId: "asc" },
@@ -84,6 +104,9 @@ export async function GET(
 
 		const tree = buildTreeWithDisplayNo(plan.nodes);
 
+		const evaluatee = plan.assignment?.evaluatee;
+		const evaluator = plan.assignment?.evaluator;
+
 		return NextResponse.json(
 		{
 			ok: true,
@@ -94,6 +117,15 @@ export async function GET(
 				status: plan.status,
 				updatedAt: plan.updatedAt,
 				confirmRequestedAt: plan.confirmRequestedAt,
+				confirmStatus: plan.confirmStatus,
+				confirmTarget: plan.confirmTarget,
+				cycle: plan.assignment?.cycle ?? null,
+				evaluatee: evaluatee
+					? { fullNameTh: buildEmployeeName(evaluatee), employeeNo: evaluatee.employeeNo }
+					: null,
+				evaluator: evaluator
+					? { fullNameTh: buildEmployeeName(evaluator), employeeNo: evaluator.employeeNo }
+					: null,
 				tree,
 			},
 		},
