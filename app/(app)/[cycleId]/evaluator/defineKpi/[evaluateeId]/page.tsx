@@ -145,6 +145,7 @@ const page = () => {
 
 	const isRequested = confirmStatus === "REQUESTED";
 	const lockEdit = confirmStatus === "REQUESTED" || confirmStatus === "CONFIRMED";
+	const isConfirmed = confirmStatus === "CONFIRMED";
 
 	const [planId, setPlanId] = useState<string | null>(null);
 	const [types, setTypes] = useState<KpiType[]>([]);
@@ -447,48 +448,53 @@ const page = () => {
 					</Button>
 				)}
 				
-
-				<Button
-					variant="primary"
-					primaryColor="yellow"
-					onClick={goCopyKpi}>
-					คัดลอกตัวชี้วัด
-				</Button>
-
-				<Button
-					variant="primary"
-					primaryColor="pink"
-					onClick={generateKpiByAI}
-				>
-					ให้ระบบช่วยแนะนำตัวชี้วัด
-				</Button>
-
-				<div className="flex ml-auto gap-2.5">
-					{/* if in 'view' mode, show edit button
-					if in 'edit' mode, show save and cancel button */}
-					{mode === "view" ? (
-						<>
-						<Button 
-							variant={isRequested ? "outline" : "primary"}
-							primaryColor="green"
-							onClick={() => {
-								if (saving) return;
-								if (isRequested) setConfirmOpenCancel(true);
-								else setConfirmOpenConfirm(true);
-							}}
-							disabled={saving}
-						>
-							{isRequested ? "ยกเลิกการขอให้รับรองตัวชี้วัด" : "ขอให้รับรองตัวชี้วัด"}
+				{!isConfirmed &&
+					<>
+						<Button
+							variant="primary"
+							primaryColor="yellow"
+							onClick={goCopyKpi}>
+							คัดลอกตัวชี้วัด
 						</Button>
-						<Button onClick={startEdit} variant="primary" primaryColor="orange" disabled={lockEdit}>แก้ไข</Button>
-						</>
-					) : (
-						<>
-						<Button onClick={cancelEdit} primaryColor="red">ยกเลิก</Button>
-						<Button onClick={saveEdit} variant="primary">บันทึก</Button>
-						</>
-					)}
-				</div>
+
+						<Button
+							variant="primary"
+							primaryColor="pink"
+							onClick={generateKpiByAI}
+						>
+							ให้ระบบช่วยแนะนำตัวชี้วัด
+						</Button>
+					</>
+				}
+				
+				{!isConfirmed &&
+					<div className="flex ml-auto gap-2.5">
+						{/* if in 'view' mode, show edit button
+						if in 'edit' mode, show save and cancel button */}
+						{mode === "view" ? (
+							<>
+							<Button 
+								variant={isRequested ? "outline" : "primary"}
+								primaryColor="green"
+								onClick={() => {
+									if (saving) return;
+									if (isRequested) setConfirmOpenCancel(true);
+									else setConfirmOpenConfirm(true);
+								}}
+								disabled={saving}
+							>
+								{isRequested ? "ยกเลิกการขอให้รับรองตัวชี้วัด" : "ขอให้รับรองตัวชี้วัด"}
+							</Button>
+							<Button onClick={startEdit} variant="primary" primaryColor="orange" disabled={lockEdit}>แก้ไข</Button>
+							</>
+						) : (
+							<>
+							<Button onClick={cancelEdit} primaryColor="red">ยกเลิก</Button>
+							<Button onClick={saveEdit} variant="primary">บันทึก</Button>
+							</>
+						)}
+					</div>
+				}
 			</div>
 
 			{error && (
