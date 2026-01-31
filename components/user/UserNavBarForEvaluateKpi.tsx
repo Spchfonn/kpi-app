@@ -1,8 +1,23 @@
 "use client";
 import React, { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { FiHome, FiUser, FiBell, FiClock, FiX } from "react-icons/fi";
+import { FiHome, FiUser, FiBell, FiClock, FiX, FiRepeat, FiKey, FiLogOut } from "react-icons/fi";
 import NotificationPanel from '../NotificationPanel';
+import { useRouter } from "next/navigation";
+import ConfirmBox from '../ConfirmBox';
+
+type LoginUser = {
+  fullName?: string;
+  cycle?: {
+    id: number;
+    name: string;
+  };
+};
+
+const ROLE_LABEL: Record<string, string> = {
+  evaluator: "ผู้ประเมิน",
+  evaluatee: "ผู้รับการประเมิน",
+};
 
 const UserNavBarForEvaluateKpi = ({
 	onOpenNoti,
