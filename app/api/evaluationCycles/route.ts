@@ -4,6 +4,8 @@ import { prisma } from "@/prisma/client";
 
 const schema = z.object({
   name: z.string().min(1).max(255),
+  year: z.number().int().min(1900),
+  round: z.number().int().min(1).nullable().optional(),
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   status: z.enum(["DEFINE", "EVALUATE", "SUMMARY"]).optional(),
@@ -18,8 +20,8 @@ function toYmdCompact(d: string) {
 	return d.replaceAll("-", "");
 }
   
-function genCode(startDate: string, endDate: string) {
-return `EC-${toYmdCompact(startDate)}-${toYmdCompact(endDate)}`;
+function genCode(year: number, round: number | null | undefined) {
+    return `EC-${year}-R${round ?? 1}`;
 }
 
 export async function POST(request: Request) {
@@ -33,11 +35,11 @@ export async function POST(request: Request) {
 		);
 	}
 
-	const { name, startDate, endDate, status, kpiDefineMode } = v.data;
+	const { name, year, round, startDate, endDate, status, kpiDefineMode } = v.data;
 
 	const cycleStatus = status ?? "DEFINE";
 
-	const code = genCode(startDate, endDate);
+	const code = genCode(year, round);
 	// avoid duplicated code
 	const exists = await prisma.evaluationCycle.findUnique({ where: { code } });
 	if (exists) {
@@ -51,6 +53,8 @@ export async function POST(request: Request) {
 		data: {
 			name,
 			code: code,
+			year: year,
+			round: round ?? null,
 			startDate: `${startDate}T00:00:00.000+07:00`,
 			endDate: `${endDate}T00:00:00.000+07:00`,
 			status: cycleStatus,

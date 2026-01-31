@@ -9,6 +9,8 @@ datasource db {
 model EvaluationCycle {
   id          Int                    @id @default(autoincrement())
   name        String                 @db.VarChar(255)
+  year        Int
+  round       Int?
   startDate   DateTime               @db.DateTime(0)
   endDate     DateTime               @db.DateTime(0)
   status      SystemStatus           @default(DEFINE)
@@ -18,6 +20,8 @@ model EvaluationCycle {
   updatedAt   DateTime               @updatedAt
   assignments EvaluationAssignment[]
   kpiDefineMode KpiDefineMode @default(EVALUATOR_DEFINES_EVALUATEE_CONFIRMS)
+
+  @@index([year, round])
 }
 
 model Organization {

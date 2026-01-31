@@ -66,6 +66,8 @@ export default function Page() {
 
 	const [data, setData] = useState<EvalCycleForm>({
 		name: `ปีการประเมิน 2568 รอบที่ 1`,
+		year: 2026,
+		round: 1,
 		startDate: "",
 		endDate: "",
 		systemStatus: "define" as StatusKey,
@@ -140,6 +142,8 @@ export default function Page() {
 				const c = cycleJson.data;
 				const next: EvalCycleForm = {
 					name: c.name ?? "",
+					year: c.year ?? "",
+					round: c.round ?? "",
 					startDate: c.startDateYmd ?? "",
 					endDate: c.endDateYmd ?? "",
 					systemStatus: apiStatusToKey(c.status),

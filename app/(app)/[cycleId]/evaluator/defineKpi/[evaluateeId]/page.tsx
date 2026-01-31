@@ -438,15 +438,13 @@ const page = () => {
 
 			{/* menu tab */}
 			<div className='flex items-center mb-3 gap-2.5'>
-				{mode === "view" && (
-					<Button 
-					variant={showAllDetails ? "outline" : "primary"}
-					primaryColor="blueDark"
-					onClick={() => setShowAllDetails((prev) => !prev)}
-					>
-						{showAllDetails ? "ซ่อนเกณฑ์คะแนน" : "แสดงเกณฑ์คะแนน"}
-					</Button>
-				)}
+				<Button 
+				variant={showAllDetails ? "outline" : "primary"}
+				primaryColor="blueDark"
+				onClick={() => setShowAllDetails((prev) => !prev)}
+				>
+					{showAllDetails ? "ซ่อนเกณฑ์คะแนน" : "แสดงเกณฑ์คะแนน"}
+				</Button>
 				
 				{!isConfirmed &&
 					<>

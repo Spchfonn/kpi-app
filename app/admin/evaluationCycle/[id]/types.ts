@@ -8,6 +8,8 @@ export type KpiDefineMode = "EVALUATOR_DEFINES_EVALUATEE_CONFIRMS" | "EVALUATEE_
 
 export type EvalCycleForm = {
   name: string;
+  year: number;
+  round: number;
   startDate: string;
   endDate: string;
   systemStatus: StatusKey;
