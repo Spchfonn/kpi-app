@@ -417,6 +417,8 @@ const page = () => {
 	const cancelDelete = () => setConfirmOpen(false);
 	const confirmDelete = () => setConfirmOpen(false);
 
+	const isSubmitted = evalStatus === "SUBMITTED";
+
 	if (loading) return <div className="p-10">Loading...</div>;
 	if (error) return <div className="p-10 text-myApp-red">{error}</div>;
 
@@ -456,23 +458,26 @@ const page = () => {
 					if in 'edit' mode, show save and cancel button */}
 					{mode === "view" ? (
 						<>
+							{!isSubmitted && (
 							<Button
 								variant="primary"
 								primaryColor="green"
 								onClick={onSubmit}
-								disabled={summarizing || saving || evalStatus === "SUBMITTED"}
+								disabled={summarizing || saving}
 							>
 								{summarizing ? "กำลังส่งผล..." : "ส่งผลการประเมิน"}
 							</Button>
+							)}
 
+							{!isSubmitted && (
 							<Button
 								onClick={startEdit}
 								variant="primary"
 								primaryColor="orange"
-								disabled={evalStatus === "SUBMITTED"}
 							>
 								แก้ไขผลการประเมิน
 							</Button>
+							)}
 						</>
 					) : (
 						<>
