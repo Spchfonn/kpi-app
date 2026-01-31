@@ -10,6 +10,7 @@ type Props = {
   options: Option[];
   placeholder?: string;
   className?: string;
+  disabled?: boolean;
 };
 
 export default function DropDown({
@@ -18,6 +19,7 @@ export default function DropDown({
   options,
   placeholder = "เลือก",
   className = "",
+  disabled = false,
 }: Props) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -28,6 +30,7 @@ export default function DropDown({
 
   // close when click outside
   useEffect(() => {
+    if (disabled) return;
     const onDocMouseDown = (e: MouseEvent) => {
       if (!rootRef.current) return;
       if (!rootRef.current.contains(e.target as Node)) setOpen(false);
@@ -38,6 +41,7 @@ export default function DropDown({
 
   // close on Escape
   useEffect(() => {
+    if (disabled) return;
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false);
     };
@@ -50,6 +54,7 @@ export default function DropDown({
       {/* trigger */}
       <button
         type="button"
+        disabled={disabled}
         onClick={() => setOpen((p) => !p)}
         className={`
           w-full
@@ -70,7 +75,7 @@ export default function DropDown({
       </button>
 
       {/* menu */}
-      {open && (
+      {open && !disabled && (
         <div
           className="
             absolute left-0 right-0 mt-1
