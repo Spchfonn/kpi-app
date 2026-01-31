@@ -17,6 +17,7 @@ model EvaluationCycle {
   publicId    String                 @unique @default(uuid())
   updatedAt   DateTime               @updatedAt
   assignments EvaluationAssignment[]
+  kpiDefineMode KpiDefineMode @default(EVALUATOR_DEFINES_EVALUATEE_CONFIRMS)
 }
 
 model Organization {
@@ -362,4 +363,9 @@ enum NotificationActionStatus {
   OPEN
   DONE
   CANCELLED
+}
+
+enum KpiDefineMode {
+  EVALUATOR_DEFINES_EVALUATEE_CONFIRMS   // แบบ 1: evaluator กำหนด -> evaluatee รับรอง
+  EVALUATEE_DEFINES_EVALUATOR_APPROVES   // แบบ 2: evaluatee กำหนด -> evaluator อนุมัติ
 }

@@ -39,6 +39,17 @@ type EmployeeSummary = {
 
 const statusMap = { define: "DEFINE", evaluate: "EVALUATE", summary: "SUMMARY" } as const;
 
+const KPI_DEFINE_MODE_OPTIONS = [
+	{
+	  value: "EVALUATOR_DEFINES_EVALUATEE_CONFIRMS",
+	  label: "ผู้ประเมินกำหนดตัวชี้วัด -> ผู้รับการประเมินรับรอง",
+	},
+	{
+	  value: "EVALUATEE_DEFINES_EVALUATOR_APPROVES",
+	  label: "ผู้รับการประเมินกำหนดตัวชี้วัด -> ผู้ประเมินอนุมัติ",
+	},
+] as const;
+
 export default function Page() {
 
 	const { id } = useParams<{ id: string }>();
@@ -58,6 +69,7 @@ export default function Page() {
 		startDate: "",
 		endDate: "",
 		systemStatus: "define" as StatusKey,
+		kpiDefineMode: "EVALUATOR_DEFINES_EVALUATEE_CONFIRMS",
 	});
   
 	// draft for edit
@@ -83,6 +95,7 @@ export default function Page() {
 					startDate: draft.startDate,
 					endDate: draft.endDate,
 					status: statusMap[draft.systemStatus],
+					kpiDefineMode: draft.kpiDefineMode,
 				}),
 			});
 		
@@ -130,6 +143,7 @@ export default function Page() {
 					startDate: c.startDateYmd ?? "",
 					endDate: c.endDateYmd ?? "",
 					systemStatus: apiStatusToKey(c.status),
+					kpiDefineMode: c.kpiDefineMode ?? "EVALUATOR_DEFINES_EVALUATEE_CONFIRMS",
 				};
 				setData(next);
 				setDraft(next);
@@ -173,7 +187,18 @@ export default function Page() {
 	const renderTab = () => {
 		switch (tab) {
 			case "basic":
-			  return <BasicTab draft={draft} setDraft={setDraft} mode={mode} />;
+			  return (
+						<BasicTab
+							draft={draft}
+							setDraft={setDraft}
+							mode={mode}
+							filterValue={draft.kpiDefineMode ?? null}
+							filterOptions={KPI_DEFINE_MODE_OPTIONS as any}
+							onFilterChange={(v) =>
+								setDraft((prev) => ({ ...prev, kpiDefineMode: v }))
+							}
+						/>
+					);
 			case "evaluationAssignment":
 			  return <EvaluationAssignmentTab
 						mode={mode}
