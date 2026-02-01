@@ -27,6 +27,7 @@ const NodeSchema: z.ZodType<any> = z.lazy(() =>
 		weightPercent: z.number().min(0).max(100),
 
 		// ITEM fields (optional in schema but enforced by refine)
+		rubric: z.any().optional().nullable(),
 		typeId: z.uuid().optional().nullable(),
 		unit: z.string().optional().nullable(),
 		startDate: z.iso.datetime().optional().nullable(),
@@ -346,6 +347,7 @@ export async function PUT(
 						title: n.title,
 						description: n.description ?? null,
 						weightPercent: new Prisma.Decimal(n.weightPercent),
+						rubric: n.nodeType === "ITEM" ? (n.rubric ?? null) : null,
 
 						// ITEM-only fields (GROUP will be forced null)
 						typeId: n.nodeType === "ITEM" ? (n.typeId ?? null) : null,
@@ -397,6 +399,9 @@ export async function PUT(
 				where: { id: planId },
 				include: {
 					nodes: {
+						include: {
+       					type: true,
+						},
 						orderBy: [
 							{ parentId: "asc" },
 							{ sortOrder: "asc" },

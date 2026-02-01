@@ -217,6 +217,7 @@ model KpiNode {
   weightPercent       Decimal         @db.Decimal(5, 2)
   typeId              String?
   unit                String?
+  rubric              Json?
   currentSubmissionId String?         @unique
   createdAt           DateTime        @default(now())
   updatedAt           DateTime        @updatedAt
