@@ -31,6 +31,7 @@ export async function GET(
 	const assignments = await prisma.evaluationAssignment.findMany({
 		where: { cycleId },
 		select: {
+			id: true,
 			weightPercent: true,
 			evaluator: {
 				select: {
@@ -67,22 +68,19 @@ export async function GET(
 			assignments.map((a) => a.evaluator).filter(Boolean),
 			(u) => u.id
 		);
-
+	  
 		const groups = evaluators.map((ev) => {
-			const evaluatees = uniqBy(
-				assignments
-				.filter((a) => a.evaluator?.id === ev.id)
-				.map((a) => ({
-					...a.evaluatee!,
-					weightPercent: a.weightPercent ?? 0,
-				}))
-				.filter(Boolean),
-				(u) => u.id
-			);
-
+			const rows = assignments.filter((a) => a.evaluator?.id === ev.id);
+		
+			const evaluatees = rows.map((a) => ({
+				...a.evaluatee!,
+				weightPercent: a.weightPercent ?? 0,
+				pairId: a.id,
+			}));
+		
 			return { evaluator: ev, evaluatees };
 		});
-
+	  
 		return NextResponse.json({ ok: true, data: groups });
 	}
 
@@ -93,23 +91,17 @@ export async function GET(
 		assignments.map((a) => a.evaluatee).filter(Boolean),
 		(u) => u.id
 	);
-
+	  
 	const groups = evaluatees.map((ee) => {
-		const evaluators = uniqBy(
-			assignments
-				.filter((a) => a.evaluatee?.id === ee.id)
-				.map((a) => ({
-					...a.evaluator!,
-					weightPercent: a.weightPercent ?? 0,
-				}))
-				.filter(Boolean),
-			(u) => u.id
-		);
-
-		return {
-			evaluator: ee,
-			evaluatees: evaluators,
-		};
+		const rows = assignments.filter((a) => a.evaluatee?.id === ee.id);
+	  
+		const evaluators = rows.map((a) => ({
+			...a.evaluator!,
+			weightPercent: a.weightPercent ?? 0,
+			pairId: a.id,
+		}));
+	  
+		return { evaluator: ee, evaluatees: evaluators };
 	});
 
   	return NextResponse.json({ ok: true, data: groups });

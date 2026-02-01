@@ -178,3 +178,59 @@ export async function PATCH(
 		);
 	}
 }
+
+export async function DELETE(_req: Request, { params }: { params: { id: string } | Promise<{ id: string }> }) {
+	const cycleId = await readParamsId(params);
+
+	console.log(cycleId)
+  
+	if (!Number.isFinite(cycleId)) {
+	  	return NextResponse.json({ ok: false, message: "invalid id" }, { status: 400 });
+	}
+  
+	const cycle = await prisma.evaluationCycle.findUnique({
+		where: { id: cycleId },
+		select: { id: true },
+	});
+  
+	if (!cycle) {
+	  	return NextResponse.json({ ok: false, message: "not found" }, { status: 404 });
+	}
+  
+	// check that this cycle has plan or not
+	const planCount = await prisma.kpiPlan.count({
+	  	where: { assignment: { cycleId } },
+	});
+  
+	if (planCount > 0) {
+		return NextResponse.json(
+			{
+				ok: false,
+				message: "ไม่สามารถลบได้ เนื่องจากรอบนี้มีการกำหนดตัวชี้วัดแล้ว",
+				reason: { planCount },
+			},
+			{ status: 409 }
+		);
+	}
+  
+	try {
+		await prisma.$transaction(async (tx) => {
+			// no plan → can delete assignment
+			await tx.evaluationAssignment.deleteMany({
+				where: { cycleId },
+			});
+	
+			// and then delete cycle
+			await tx.evaluationCycle.delete({
+				where: { id: cycleId },
+			});
+		});
+	
+		return NextResponse.json({ ok: true });
+	} catch (e: any) {
+		return NextResponse.json(
+			{ ok: false, message: "delete failed", detail: e?.message ?? String(e) },
+			{ status: 500 }
+		);
+	}
+}
