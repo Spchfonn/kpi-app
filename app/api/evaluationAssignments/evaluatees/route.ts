@@ -44,6 +44,11 @@ export async function GET(req: Request) {
 				evalStatus: true,
 				weightPercent: true,
 				currentPlanId: true,
+				currentPlan: {
+					select: {
+						confirmStatus: true
+					}
+				},
 				evaluatee: {
 					select: {
 						id: true,
@@ -67,7 +72,8 @@ export async function GET(req: Request) {
 			assignmentId: a.id,
 			evalStatus: a.evalStatus,
 			currentPlanId: a.currentPlanId,
-			weightPercent: a.weightPercent, // decimal -> string usually
+			weightPercent: a.weightPercent,
+			confirmStatus: a.currentPlan?.confirmStatus,
 			evaluatee: {
 				id: a.evaluatee.id,
 				fullName: `${PREFIX_TH[a.evaluatee.prefixName]}${a.evaluatee.name} ${a.evaluatee.lastName}`,

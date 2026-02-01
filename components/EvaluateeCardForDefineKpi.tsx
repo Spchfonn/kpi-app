@@ -4,6 +4,7 @@ import React, { useMemo } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { FiFileText, FiUser } from "react-icons/fi";
 
+type PlanConfirmStatus = "DRAFT" | "REQUESTED" | "CONFIRMED" | "REJECTED" | "CANCELLED";
 type StripColor = "red" | "green" | "yellow";
 
 const stripBg: Record<StripColor, string> = {
@@ -12,11 +13,20 @@ const stripBg: Record<StripColor, string> = {
   yellow: "bg-myApp-yellow",
 };
 
+const STATUS_TO_STRIP_COLOR: Record<PlanConfirmStatus, StripColor> = {
+  DRAFT: "red",
+  REQUESTED: "yellow", // รออนุมัติ
+  CONFIRMED: "green",  // อนุมัติแล้ว
+  REJECTED: "red",
+  CANCELLED: "red",
+};
+
 type Props = {
   id: string;
   name: string;
   title: string;
   stripColor?: StripColor;
+  status?: PlanConfirmStatus;
 };
 
 function PillButton({
@@ -46,14 +56,22 @@ function PillButton({
 	);
   }
 
-export default function EmployeeCardForDefineKpi({
+export default function EvaluatorCardForDefineKpi({
   id,
   name,
   title,
   stripColor = "red",
+  status,
 }: Props) {
 	const router = useRouter();
 	const pathname = usePathname();
+
+	const activeStripColor: StripColor = useMemo(() => {
+    if (!status) return stripColor; // ถ้าไม่มี status ใช้สี default
+
+    const normalizedStatus = status.toUpperCase() as PlanConfirmStatus;
+    return STATUS_TO_STRIP_COLOR[normalizedStatus] || stripColor;
+  }, [status, stripColor]);
   
 	// หา base path ของหน้าปัจจุบันให้เป็น /.../defineKpi หรือ /.../evaluateKpi
 	const base = useMemo(() => {
@@ -95,7 +113,7 @@ export default function EmployeeCardForDefineKpi({
 			{/* card */}
 			<div className="bg-myApp-white rounded-2xl shadow-sm px-10 py-4 flex gap-8 items-start">
 				{/* left red strip */}
-				<div className={`absolute left-0 top-0 h-full w-5 rounded-l-2xl ${stripBg[stripColor]}`} />
+				<div className={`absolute left-0 top-0 h-full w-5 rounded-l-2xl ${stripBg[activeStripColor]}`} />
 
 				<div>
 					<div className="flex flex-1 gap-4">
