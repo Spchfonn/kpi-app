@@ -108,15 +108,8 @@ export default function SelectEmployeeModal({
 		{/* panel */}
 		<div
 			ref={panelRef}
-			className="
-			relative
-			mx-auto mt-20
-			w-240 max-w-[92vw] h-140
-			rounded-3xl
-			bg-myApp-white
-			shadow-lg
-			px-10 py-8
-			"
+			className="relative mx-auto mt-17 w-250 max-w-[95vw] h-150 rounded-2xl
+					bg-myApp-white shadow-xl px-10 py-8 flex flex-col"
 		>
 			{/* header */}
 			<div className="flex items-center gap-1">
@@ -156,7 +149,7 @@ export default function SelectEmployeeModal({
 			<div className="mt-2 h-0.5 w-full bg-myApp-blueDark" />
 
 			{/* rows scroll */}
-			<div className="mt-2 space-y-3 overflow-auto pr-1 flex-1">
+			<div className="mt-2 space-y-3 overflow-auto pr-1 flex-1 min-h-0">
 				{loading && (
 					<div className="text-body text-myApp-blueDark/70 py-4">กำลังโหลด...</div>
 				)}
@@ -194,9 +187,6 @@ export default function SelectEmployeeModal({
 					);
 				})}
 				</div>
-
-			{/* footer spacing */}
-			<div className="h-8" />
 		</div>
 		</div>
 	);
