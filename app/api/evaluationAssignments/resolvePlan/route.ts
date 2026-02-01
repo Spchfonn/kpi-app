@@ -152,8 +152,8 @@ export async function GET(req: Request) {
 						evaluatee: {
 							fullNameTh: `${PREFIX_TH[assignment.evaluatee.prefixName]}${assignment.evaluatee.name} ${assignment.evaluatee.lastName}`,
 							position: assignment.evaluatee.position,
-							level: assignment.evaluatee.level,
-							organization: assignment.evaluatee.organization,
+            		   level: assignment.evaluatee.level,
+               		organization: assignment.evaluatee.organization,
 						}
 					},
 				},

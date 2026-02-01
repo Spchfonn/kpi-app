@@ -208,6 +208,7 @@ const page = () => {
 				setCycleEndIso(c.endDate);
 
 				setEvaluateeName(jResolve.data.evaluatee?.fullNameTh ?? "");
+				setEmployeeData(jResolve.data.evaluatee);
 
 				const pid = jResolve.data.planId as string;
 				setPlanId(pid);

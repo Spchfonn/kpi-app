@@ -195,10 +195,12 @@ const page = () => {
             if (!jResolve.ok) throw new Error(jResolve.message ?? "resolvePlan failed");
 
             const c = jResolve.data.cycle;
+            setEmployeeData(jResolve.data.evaluatee);
             setCycleStartIso(c.startDate);
             setCycleEndIso(c.endDate);
 
             setEvaluateeName(jResolve.data.evaluatee?.fullNameTh ?? "");   
+            setEmployeeData(jResolve.data.evaluatee);
             
             const pid = jResolve.data.planId as string;
             setPlanId(pid);
