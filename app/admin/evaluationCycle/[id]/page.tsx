@@ -11,6 +11,7 @@ import EvaluationAssignmentTab from "./_tabs/EvaluationAssignmentTab";
 import EmployeeStatusTab from "./_tabs/EmployeeStatusTab";
 import KpiStructureTab from "./_tabs/KpiStructureTab";
 import DashboardTab from "./_tabs/DashboardTab";
+import ConfirmBox from "@/components/ConfirmBox";
 
 function apiStatusToKey(s: "DEFINE" | "EVALUATE" | "SUMMARY"): StatusKey {
 	if (s === "DEFINE") return "define";
@@ -114,12 +115,48 @@ export default function Page() {
 
 	const canEditTab: Partial<Record<TabKey, boolean>> = {
 		basic: true,
-		evaluationAssignment: true,
+		evaluationAssignment: false,
 		employeeStatus: false,
 		kpiStructure: true,
 		dashboard: false,
 	};
 	const canEdit = !!canEditTab[tab];
+
+	const [deleting, setDeleting] = useState(false);
+	const [openConfirmDelete, setOpenConfirmDelete] = useState(false);
+	const handleConfirmDelete = async () => {
+		if (!id) return;
+	  
+		setDeleting(true);
+		try {
+			const res = await fetch(`/api/evaluationCycles/${id}`, {
+				method: "DELETE",
+				headers: { "Content-Type": "application/json" },
+			});
+		
+			const json = await res.json().catch(() => null);
+		
+			if (!res.ok) {
+				if (res.status === 409) {
+					alert(json?.message ?? "ไม่สามารถลบได้ เนื่องจากรอบนี้มีการกำหนดตัวชี้วัดแล้ว");
+					return;
+				}
+		
+				alert(json?.message ?? `ลบไม่สำเร็จ (${res.status})`);
+				console.error("DELETE failed", json);
+				return;
+			}
+		
+			alert("ลบสำเร็จ");
+			window.location.href = "/admin";
+		} catch (e: any) {
+			console.error(e);
+			alert(e?.message ?? "ลบไม่สำเร็จ");
+		} finally {
+		  	setDeleting(false);
+		}
+	};
+	const handleCancelDelete = () => setOpenConfirmDelete(false);
 
 	const [employees, setEmployees] = useState<EmployeeRow[]>([]);
 	const [empSummary, setEmpSummary] = useState<EmployeeSummary>({
@@ -188,6 +225,26 @@ export default function Page() {
 		})();
 	}, [id, tab, groupBy]);
 
+	const fetchGroups = async () => {
+		if (!id) return;
+		const res = await fetch(
+			`/api/evaluationCycles/${id}/evaluationAssignments?groupBy=${groupBy}`,
+			{ cache: "no-store" }
+		);
+		const json = await res.json();
+		if (!res.ok) {
+			console.error(json);
+			return;
+		}
+		setGroups(json.data);
+	};
+	  
+	useEffect(() => {
+		if (!id) return;
+		if (tab !== "evaluationAssignment") return;
+		fetchGroups();
+	}, [id, tab, groupBy]);
+
 	const renderTab = () => {
 		switch (tab) {
 			case "basic":
@@ -205,10 +262,10 @@ export default function Page() {
 					);
 			case "evaluationAssignment":
 			  return <EvaluationAssignmentTab
-						mode={mode}
 						groups={groups}
 						groupBy={groupBy}
-						onChangeGroupBy={setGroupBy} />;
+						onChangeGroupBy={setGroupBy}
+						reloadGroups={fetchGroups} />;
 			case "employeeStatus":
 			  return <EmployeeStatusTab employees={employees} summary={empSummary} />;
 			case "kpiStructure":
@@ -232,9 +289,16 @@ export default function Page() {
 					<EvaluationCycleMenuBar active={tab} onChange={setTab}/>
 					<div className="ml-auto flex gap-2">
 					{canEdit && ( mode === "view" ? (
-						<Button variant="primary" primaryColor="orange" onClick={startEdit}>
-							แก้ไข
-						</Button>
+						<>
+							{tab === "basic" && (
+							<Button variant="primary" primaryColor="red" onClick={() => setOpenConfirmDelete(true)} disabled={deleting}>
+								{deleting ? "กำลังลบ..." : "ลบ"}
+							</Button>
+							)}
+							<Button variant="primary" primaryColor="orange" onClick={startEdit}>
+								แก้ไข
+							</Button>
+						</>
 					) : (
 						<>
 							<Button primaryColor="red" onClick={cancelEdit}>
@@ -254,6 +318,15 @@ export default function Page() {
 			<div>
 				{renderTab()}
 			</div>
+
+			<ConfirmBox
+				open={openConfirmDelete}
+				message="ต้องการลบรอบการประเมินนี้ใช่หรือไม่?"
+				cancelText="ยกเลิก"
+				confirmText="ตกลง"
+				onCancel={handleCancelDelete}
+				onConfirm={handleConfirmDelete}
+			/>
 			
 		</div>
 	</>
