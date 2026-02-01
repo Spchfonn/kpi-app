@@ -103,7 +103,7 @@ const page = () => {
 								disabled={!cyclePublicId}
 								onClick={() => {
 									localStorage.setItem("selectedRole", it.key);
-									router.push(`/${cyclePublicId}/${ROLE_ROUTE[it.key]}/defineKpi`);
+									router.push(`/${cyclePublicId}/${ROLE_ROUTE[it.key]}`);
 								}}
                         className="w-35 h-36 rounded-2xl flex flex-col items-center justify-center gap-2 shadow-sm
                               bg-myApp-white hover:bg-myApp-shadow/30"
