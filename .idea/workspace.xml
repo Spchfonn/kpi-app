@@ -6,12 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="efa7c69f-6049-41ab-9563-086e6e42c610" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/admin/evaluationCycle/[id]/_tabs/EvaluationAssignmentTab.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/admin/evaluationCycle/[id]/_tabs/EvaluationAssignmentTab.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/admin/evaluationCycle/[id]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/admin/evaluationCycle/[id]/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/evaluationCycles/[id]/evaluationAssignments/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/evaluationCycles/[id]/evaluationAssignments/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/evaluationCycles/[id]/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/evaluationCycles/[id]/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/evaluationCycles/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/evaluationCycles/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/components/admin/EvaluationPairsTable.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/admin/EvaluationPairsTable.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -36,7 +30,7 @@
     "RunOnceActivity.git.unshallow": "true",
     "database.data.extractors.current.export.id": "SQL Inserts",
     "database.data.extractors.current.id": "SQL Inserts",
-    "git-widget-placeholder": "frontend-adminFlow",
+    "git-widget-placeholder": "backend/fixBug__copyKpi",
     "last_opened_file_path": "/Users/fonspch"
   },
   "keyToStringList": {
