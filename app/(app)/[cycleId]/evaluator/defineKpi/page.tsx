@@ -1,6 +1,6 @@
 "use client";
 import DefinedStatus from '@/components/DefinedStatus';
-import EmployeeCardForDefineKpi from '@/components/EvaluateeCardForDefineKpi'
+import EvaluateeCardForDefineKpi from '@/components/EvaluateeCardForDefineKpi'
 import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react'
 
@@ -19,10 +19,13 @@ function getLoginUser(): LoginUser | null {
 	}
 }
 
+type PlanConfirmStatus = "DRAFT" | "REQUESTED" | "CONFIRMED" | "REJECTED" | "CANCELLED";
+
 type Item = {
 	assignmentId: string;
 	currentPlanId: string | null;
 	weightPercent: string;
+	confirmStatus?: PlanConfirmStatus;	
 	evaluatee: {
 		id: string;
 		fullName: string;
@@ -69,11 +72,12 @@ export default function Page({ params }: { params: { id: string } })  {
 
 			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 				{items.map((x) => (
-					<EmployeeCardForDefineKpi
+					<EvaluateeCardForDefineKpi
 						key={x.evaluatee.id}
 						id={x.evaluatee.id}
 						name={x.evaluatee.fullName}
 						title={x.evaluatee.title}
+						status={x.confirmStatus}
 					/>
 				))}
 			</div>
