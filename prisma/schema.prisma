@@ -20,8 +20,31 @@ model EvaluationCycle {
   updatedAt   DateTime               @updatedAt
   assignments EvaluationAssignment[]
   kpiDefineMode KpiDefineMode @default(EVALUATOR_DEFINES_EVALUATEE_CONFIRMS)
+  activities CycleActivity[]
+
+  closedAt   DateTime? @db.DateTime(0)
+  closedById String?
+  closedBy   Employee? @relation("CycleClosedBy", fields: [closedById], references: [id])
 
   @@index([year, round])
+  @@index([closedById])
+}
+
+model CycleActivity {
+  id          Int               @id @default(autoincrement())
+  cycleId     Int
+  type        CycleActivityType
+  enabled     Boolean           @default(false)
+  startAt     DateTime?         @db.DateTime(0)
+  endAt       DateTime?         @db.DateTime(0)
+  updatedAt   DateTime          @updatedAt
+  updatedById String?
+  updatedBy   Employee?         @relation("CycleActivityUpdatedBy", fields: [updatedById], references: [id])
+  cycle       EvaluationCycle   @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+
+  @@unique([cycleId, type])
+  @@index([cycleId, enabled])
+  @@index([updatedById])
 }
 
 model Organization {
@@ -112,6 +135,9 @@ model Employee {
   actedNotifications   Notification[]         @relation("NotificationActor")
   managedOrganizations Organization[]         @relation("OrgManager")
   user                 User?
+  updatedCycleActivities CycleActivity[]      @relation("CycleActivityUpdatedBy")
+  closedCycles EvaluationCycle[]              @relation("CycleClosedBy")
+  planConfirmEvents KpiPlanConfirmEvent[]     @relation("PlanEventActor")
 
   @@index([organizationId])
   @@index([positionId])
@@ -158,11 +184,16 @@ model EvaluationAssignment {
   evaluator     Employee             @relation("Evaluator", fields: [evaluatorId], references: [id])
   submittedBy   Employee?            @relation("AssignmentSubmittedBy", fields: [submittedById], references: [id])
   plans         KpiPlan[]
+  needsReEval     Boolean @default(false)
+  evaluatedPlanId String?
+  evaluatedPlan   KpiPlan? @relation("AssignmentEvaluatedPlan", fields: [evaluatedPlanId], references: [id])
 
   @@unique([cycleId, evaluatorId, evaluateeId])
   @@index([evaluateeId, cycleId])
   @@index([evaluatorId, cycleId])
   @@index([submittedById], map: "EvaluationAssignment_submittedById_fkey")
+  @@index([evaluatedPlanId])
+  @@index([currentPlanId])
 }
 
 model KpiType {
@@ -197,6 +228,9 @@ model KpiPlan {
   confirmRequestedBy   Employee?             @relation("PlanConfirmRequestedBy", fields: [confirmRequestedById], references: [id])
   confirmedBy          Employee?             @relation("PlanConfirmedBy", fields: [confirmedById], references: [id])
   rejectedBy           Employee?             @relation("PlanRejectedBy", fields: [rejectedById], references: [id])
+  contentHash          String? @db.VarChar(64)
+  events               KpiPlanConfirmEvent[]
+  evaluatedByAssignments EvaluationAssignment[] @relation("AssignmentEvaluatedPlan")
 
   @@unique([assignmentId, version])
   @@index([assignmentId, status])
@@ -205,6 +239,28 @@ model KpiPlan {
   @@index([confirmRequestedById], map: "KpiPlan_confirmRequestedById_fkey")
   @@index([confirmedById], map: "KpiPlan_confirmedById_fkey")
   @@index([rejectedById], map: "KpiPlan_rejectedById_fkey")
+  @@index([contentHash])
+}
+
+model KpiPlanConfirmEvent {
+  id         String              @id @default(uuid())
+  planId     String
+  type       PlanConfirmEventType
+  fromStatus PlanConfirmStatus?
+  toStatus   PlanConfirmStatus?
+  target     PlanConfirmTarget?
+  actorId    String?
+  note       String?
+  meta       Json?
+  createdAt  DateTime            @default(now())
+
+  plan       KpiPlan             @relation(fields: [planId], references: [id], onDelete: Cascade)
+  actor      Employee?           @relation("PlanEventActor", fields: [actorId], references: [id])
+
+  notifications Notification[]   @relation("NotificationRefPlanEvent")
+
+  @@index([planId, createdAt])
+  @@index([actorId, createdAt])
 }
 
 model KpiNode {
@@ -265,10 +321,13 @@ model Notification {
   recipients NotificationRecipient[]
   refPlanId       String?
   refAssignmentId String?
+  refPlanEventId String?
+  refPlanEvent   KpiPlanConfirmEvent? @relation("NotificationRefPlanEvent", fields: [refPlanEventId], references: [id])
 
   @@index([type])
   @@index([createdAt])
   @@index([actorId], map: "Notification_actorId_fkey")
+  @@index([refPlanEventId])
 }
 
 model NotificationRecipient {
@@ -373,4 +432,19 @@ enum NotificationActionStatus {
 enum KpiDefineMode {
   EVALUATOR_DEFINES_EVALUATEE_CONFIRMS   // แบบ 1: evaluator กำหนด -> evaluatee รับรอง
   EVALUATEE_DEFINES_EVALUATOR_APPROVES   // แบบ 2: evaluatee กำหนด -> evaluator อนุมัติ
+}
+
+enum CycleActivityType {
+  DEFINE
+  EVALUATE
+  SUMMARY
+}
+
+enum PlanConfirmEventType {
+  REQUESTED
+  CONFIRMED
+  REJECTED
+  CANCELLED
+  REOPENED
+  COMMENTED
 }
