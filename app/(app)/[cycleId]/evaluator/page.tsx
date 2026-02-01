@@ -7,14 +7,9 @@ type Props = {
 
 export default async function EvaluatorLanding({ params }: Props) {
   const { cycleId } = await params;
-  const id = Number(cycleId);
-
-  if (!Number.isFinite(id)) {
-    notFound();
-  }
 
   const cycle = await prisma.evaluationCycle.findUnique({
-    where: { id },
+    where: { publicId: cycleId },
     select: { status: true },
   });
 
