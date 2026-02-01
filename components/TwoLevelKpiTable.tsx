@@ -333,7 +333,7 @@ export default function TwoLevelKpiTable({
 		// fallback: from server/type definition
 		const fromType = c.type?.rubric ?? (c.typeId ? kpiTypeMap.get(c.typeId)?.rubric : null);
 	  
-		const rubric = fromDraft ?? fromType;
+		const rubric = c.rubricDraft ?? c.type?.rubric;
 		if (!rubric) return null;
 	  
 		switch (rubric.kind) {

@@ -30,6 +30,7 @@ type Node = {
    unit?: string | null;
    startDate?: string | null;
    endDate?: string | null;
+   rubricDraft?: any | null;
    children: Node[];
    displayNo?: string;
    type?: KpiType | null;
@@ -72,6 +73,7 @@ function normalizeNode(n: any): Node {
       unit: n.unit ?? null,
       startDate: n.startDate ?? null,
       endDate: n.endDate ?? null,
+      rubricDraft: n.rubric ?? null,
       displayNo: n.displayNo,
       type: n.type ?? null,
       children: Array.isArray(n.children) ? n.children.map(normalizeNode) : [],
@@ -89,6 +91,7 @@ function stripForPut(n: Node): any {
       unit: n.nodeType === "ITEM" ? (n.unit ?? null) : null,
       startDate: n.nodeType === "ITEM" ? (n.startDate ?? null) : null,
       endDate: n.nodeType === "ITEM" ? (n.endDate ?? null) : null,
+      rubric: n.nodeType === "ITEM" ? (n.rubricDraft ?? n.type?.rubric ?? null) : null,
       children: n.nodeType === "GROUP" ? (n.children ?? []).map(stripForPut) : [],
    };
 }
