@@ -46,7 +46,7 @@ const PLAN_CONFIRM_UI: Record<PlanConfirmStatus, { label: string; className: str
 	REQUESTED: { label: "รอการอนุมัติ/รับรอง", className: "text-myApp-orange" },
 	CONFIRMED: { label: "กำหนดตัวชี้วัดสมบูรณ์", className: "text-myApp-green" },
 	REJECTED: { label: "ตัวชี้วัดถูกปฏิเสธ", className: "text-myApp-red" },
-	CANCELLED: { label: "ยกเลิกคำขอ", className: "text-myApp-blueDark" },
+	CANCELLED: { label: "ยกเลิกคำขอ", className: "text-myApp-red" },
 };
 
 //
