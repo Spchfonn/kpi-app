@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/prisma/client";
+import { loadPlanContext } from "../../_lib/loadContext";
 
 /**
  * GET /api/plans/:planId
@@ -64,6 +65,8 @@ export async function GET(
 	try {
 		const { planId } = await ctx.params;
 
+		await loadPlanContext(planId);
+
 		const plan = await prisma.kpiPlan.findUnique({
 			where: { id: planId },
 			select: {
@@ -75,6 +78,7 @@ export async function GET(
 				confirmRequestedAt: true,
 				confirmStatus: true,
     			confirmTarget: true,
+
 				assignment: {
 					select: {
 						cycle: { select: { startDate: true, endDate: true } },
@@ -82,6 +86,7 @@ export async function GET(
 						evaluator: { select: { prefixName: true, name: true, lastName: true, employeeNo: true } },
 					},
 				},
+
 				nodes: {
 					orderBy: [
 						{ parentId: "asc" },
@@ -90,6 +95,21 @@ export async function GET(
 					],
 					include: {
 						type: { select: { id: true, type: true, name: true, rubric: true } },
+					},
+				},
+
+				events: {
+					orderBy: { createdAt: "asc" },
+					select: {
+						id: true,
+						type: true,
+						fromStatus: true,
+						toStatus: true,
+						target: true,
+						note: true,
+						meta: true,
+						createdAt: true,
+						actor: { select: { prefixName: true, name: true, lastName: true, employeeNo: true } },
 					},
 				},
 			},
@@ -127,6 +147,19 @@ export async function GET(
 					? { fullNameTh: buildEmployeeName(evaluator), employeeNo: evaluator.employeeNo }
 					: null,
 				tree,
+				events: (plan as any).events?.map((ev: any) => ({
+					id: ev.id,
+					type: ev.type,
+					fromStatus: ev.fromStatus,
+					toStatus: ev.toStatus,
+					target: ev.target,
+					note: ev.note,
+					meta: ev.meta,
+					createdAt: ev.createdAt,
+					actor: ev.actor
+					  ? { fullNameTh: buildEmployeeName(ev.actor), employeeNo: ev.actor.employeeNo }
+					  : null,
+				})) ?? [],
 			},
 		},
 		{ status: 200 }
