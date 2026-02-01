@@ -142,7 +142,6 @@ export default function EvaluatorCardForDefineKpi({
 					<div className="mt-3 flex flex-wrap gap-3">
 						<PillButton href="/user/dashboard">Dashboard</PillButton>
 						<PillButton href={defineKpiHref}>กำหนดตัวชี้วัด</PillButton>
-						<PillButton href="/user/dashboard">สั่งให้กำหนดตัวชี้วัด</PillButton>
 					</div>
 				</div>
 			</div>
