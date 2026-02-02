@@ -3,9 +3,14 @@ import { useMemo, useState } from "react";
 import { FiChevronDown, FiChevronRight } from "react-icons/fi";
 import KpiDetailsBar, { type KpiTypeChoice } from "./KpiDetailsBar";
 import ScoreBoxForQuantitativeKpi from "./ScoreBoxForQuantitativeKpi";
-import KpiScoreInput from "./user/KpiScoreInput";
+import KpiScoreInput, { getRequirementText } from "./user/KpiScoreInput";
 import ScoreBoxForCustomKpi from "./ScoreBoxForCustomKpi";
 import ScoreBoxForQualitativeKpi from "./ScoreBoxForQualitativeKpi";
+
+type Rubric =
+  | { kind: "QUANTITATIVE_1_TO_5"; levels: { unit: string | null; score: number; value: number }[] }
+  | { kind: "QUALITATIVE_CHECKLIST"; checklist: { item: string; weight_percent: number }[] }
+  | { kind: "CUSTOM_DESCRIPTION_1_TO_5"; levels: { desc: string; score: number }[] };
 
 type ChecklistCriterion = {
 	id: string;
@@ -42,10 +47,11 @@ export type KpiTreeNode = {
 	weightPercent: number;
   
 	typeId?: string | null;
-	type?: { id: string; type: "QUANTITATIVE"|"QUALITATIVE"|"CUSTOM"; name: string; rubric?: any } | null;
+	type?: { id: string; type: "QUANTITATIVE"|"QUALITATIVE"|"CUSTOM"; name: string; rubric?: Rubric } | null;
 	unit?: string | null;
 	startDate?: string | null;
 	endDate?: string | null;
+	rubric?: Rubric | null;
   
 	children: KpiTreeNode[];
 	displayNo?: string;
@@ -107,10 +113,10 @@ export default function TwoLevelKpiTableForEvaluateKpi({
 		}));
 	};
 
-	const renderRubric = (t?: any) => {
-		const rubric = t?.rubric;
-		if (!rubric) return null;
-		
+	const renderRubric = (c: KpiTreeNode) => {
+      const rubric = c.rubric ?? c.type?.rubric;
+      
+      if (!rubric) return null;
 		switch (rubric.kind) {
 			case "QUANTITATIVE_1_TO_5":
 				return (
@@ -211,7 +217,7 @@ export default function TwoLevelKpiTableForEvaluateKpi({
 										const detailsTypes = t ? [{ id: t.id, type: t.type, name: t.name }] : [];
 										const legacyType = toLegacyKpiType(t?.type ?? null);
 										const s = scores[cKey] ?? { score: "", checkedIds: [] };
-
+										const rubric = c.rubric ?? c.type?.rubric;
 										const criteria = t?.rubric?.kind === "QUALITATIVE_CHECKLIST"
 														? t.rubric.checklist.map((x: any, i: number) => ({
 															id: String(i + 1),
@@ -219,14 +225,23 @@ export default function TwoLevelKpiTableForEvaluateKpi({
 														}))
 														: [];
 
-										const scale = t?.rubric?.kind === "QUANTITATIVE_1_TO_5"
-														? { kind: t.rubric.kind, levels: t.rubric.levels }
-														: undefined;
+										const scale = rubric?.kind === "QUANTITATIVE_1_TO_5"
+                                 ? { 
+                                     kind: rubric.kind, 
+                                     levels: rubric.levels.map((l) => ({
+                                        ...l,
+                                        unit: l.unit ?? "" // ถ้าเป็น null ให้ใช้ "" แทน
+                                     }))
+                                   }
+                                 : undefined;
 
-										const childComputedPercent = itemByNode?.[cKey];
+                              const childComputedPercent = itemByNode?.[cKey];
 
-										return (
-											<div key={cKey} className="bg-myApp-white rounded-xl shadow-sm px-4 py-3 ml-10">
+                              // แก้ไขบรรทัดนี้: ส่ง c.unit เพิ่มเข้าไปเป็น argument ตัวที่ 3
+                              const requirementText = getRequirementText(s.score, scale, c.unit);
+
+                              return (
+                                 <div key={cKey} className="bg-myApp-white rounded-xl shadow-sm px-4 py-3 ml-10">
 												<div className={`${colClass}`}>
 													<div className="text-myApp-blueDark flex gap-2">
 														<span className="font-medium">
@@ -262,20 +277,28 @@ export default function TwoLevelKpiTableForEvaluateKpi({
 												</div>
 
 												{showAllDetails && (
-													<div className="flex flex-col mt-2 rounded-xl px-4 gap-1.5">
-														<KpiDetailsBar
-															mode={detailsMode}
-															typeId={detailsTypeId}
-															onTypeIdChange={() => {}}
-															kpiTypes={detailsTypes}
-															unit={c.unit ?? ""}
-															onUnitChange={() => {}}
-															startDate={c.startDate ?? ""}
-															onStartDateChange={() => {}}
-															endDate={c.endDate ?? ""}
-															onEndDateChange={() => {}}
-														/>
-														{renderRubric(t)}
+													<div className={`${colClass}`}>
+														<div className="flex flex-col mt-2 rounded-xl px-4 gap-1.5">
+															<KpiDetailsBar
+																mode={detailsMode}
+																typeId={detailsTypeId}
+																onTypeIdChange={() => {}}
+																kpiTypes={detailsTypes}
+																unit={c.unit ?? ""}
+																onUnitChange={() => {}}
+																startDate={c.startDate ?? ""}
+																onStartDateChange={() => {}}
+																endDate={c.endDate ?? ""}
+																onEndDateChange={() => {}}
+															/>
+															{renderRubric(c)}
+														</div>
+														<div></div>
+														<div className="mb-auto text-smallBody font-medium text-myApp-blue">
+															{requirementText}
+														</div>
+														<div></div>
+
 													</div>
 												)}
 											</div>
