@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useEffect } from "react";
 import { FiPlusCircle, FiTrash2 } from "react-icons/fi";
 
 export type QualitativeItem = {
@@ -13,6 +13,7 @@ type Props = {
 	title?: string;
 	items: QualitativeItem[];
 	onChange?: (items: QualitativeItem[]) => void;
+	onValidityChange?: (isValid: boolean) => void;
 };
 
 export default function ScoreBoxForQualitativeKpi({
@@ -20,6 +21,7 @@ export default function ScoreBoxForQualitativeKpi({
 		title = "อันดับ",
 		items,
 		onChange,
+		onValidityChange,
 	}: Props) {
 
 	const isEditable = mode === "edit" && !!onChange;
@@ -50,6 +52,14 @@ export default function ScoreBoxForQualitativeKpi({
 		onChange(normalized);
 	};
 
+	const totalWeight = items.reduce((sum, it) => sum + (Number(it.weight) || 0), 0);
+
+	useEffect(() => {
+    if (onValidityChange) {
+      const isValid = totalWeight === 100;
+      onValidityChange(isValid);
+    }
+  }, [totalWeight, onValidityChange]);
 	return (
 		<div className="inline-block">
 			<div className="grid grid-cols-[24px_2px_500px_20px_56px_30px] text-myApp-blueDark text-smallTitle font-medium mb-1">
@@ -57,8 +67,16 @@ export default function ScoreBoxForQualitativeKpi({
 				<div />
 				<div />
 				<div />
-        		<div className="text-right">ค่าน้ำหนัก</div>
-        		<div></div>
+        		<div className="text-center">
+					ค่าน้ำหนัก
+				</div>
+        		<div>
+					{mode === "edit" && (
+						<div className={`ml-1 text-[10px] ${totalWeight === 100 ? "text-myApp-green" : "text-myApp-red"}`}>
+							{totalWeight}%
+						</div>
+					)}
+				</div>
 			</div>
 
 			<div className="relative">

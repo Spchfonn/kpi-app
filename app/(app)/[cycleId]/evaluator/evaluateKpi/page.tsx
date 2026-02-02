@@ -23,6 +23,7 @@ type Item = {
 	assignmentId: string;
 	currentPlanId: string | null;
 	weightPercent: string;
+	evalStatus: string;
 	evaluatee: {
 		id: string;
 		fullName: string;

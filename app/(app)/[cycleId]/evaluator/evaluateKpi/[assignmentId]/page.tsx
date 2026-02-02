@@ -91,10 +91,12 @@ function computeSummary(tree: KpiTreeNode[], scores: Record<string, EvalScoreSta
 	const computeItemScore0to5 = (item: KpiTreeNode): number => {
 		const k = nodeKey(item);
 		const st = scores[k] ?? { score: "", checkedIds: [] };
+		
+		const rubric = item.rubric ?? item.type?.rubric;
 	
 		// QUALITATIVE
-		if (item.type?.rubric?.kind === "QUALITATIVE_CHECKLIST") {
-			const checklist = item.type.rubric.checklist ?? [];
+		if (rubric?.kind === "QUALITATIVE_CHECKLIST") {
+			const checklist = rubric.checklist ?? [];
 			const checked = new Set((st.checkedIds ?? []).map(String));
 	
 			const totalW = checklist.reduce((sum: number, x: any) => sum + Number(x.weight_percent ?? 0), 0) || 0;
