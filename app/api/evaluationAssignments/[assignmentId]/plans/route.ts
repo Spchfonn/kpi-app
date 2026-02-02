@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/prisma/client";
+import { requireUser } from "@/app/lib/auth";
+import { forbid } from "@/app/api/_lib/kpiWorkflow";
+import { isConfirmer, isDefineOwner } from "@/app/api/_lib/guards";
 
 const schema = z.object({
 	// optional: สร้าง draft หรือสร้างแล้ว active เลย
@@ -70,5 +73,72 @@ export async function POST(req: Request, ctx: { params: Promise<{ assignmentId: 
 	} catch (err: any) {
 		console.error("POST /api/evaluationAssignments/[assignmentId]/plans error:", err);
 		return NextResponse.json({ ok: false, message: err?.message ?? "Internal Server Error" }, { status: 500 });
+	}
+}
+
+export async function GET(_: Request, { params }: { params: Promise<{ assignmentId: string }> }) {
+	try {
+		const { assignmentId } = await params;
+		const user = await requireUser();
+
+		const assignment = await prisma.evaluationAssignment.findUnique({
+			where: { id: assignmentId },
+			select: {
+				id: true,
+				cycleId: true,
+				evaluatorId: true,
+				evaluateeId: true,
+				currentPlanId: true,
+			},
+		});
+		if (!assignment) {
+			forbid("assignment not found", 404);
+			throw new Error();
+		}
+
+		const cycle = await prisma.evaluationCycle.findUnique({
+			where: { id: assignment.cycleId },
+			select: { id: true, kpiDefineMode: true },
+		});
+		if (!cycle) forbid("cycle not found", 404);
+
+		// admin: currentPlan
+		if (user.isAdmin) {
+			const p = assignment.currentPlanId
+				? await prisma.kpiPlan.findUnique({
+					where: { id: assignment.currentPlanId },
+					include: { nodes: { orderBy: [{ parentId: "asc" }, { sortOrder: "asc" }] } },
+				})
+				: null;
+			return NextResponse.json({ ok: true, data: p });
+		}
+
+		// define owner: currentPlan (including draft)
+		if (isDefineOwner(user, cycle, assignment)) {
+			const p = assignment.currentPlanId
+				? await prisma.kpiPlan.findUnique({
+					where: { id: assignment.currentPlanId },
+					include: { nodes: { orderBy: [{ parentId: "asc" }, { sortOrder: "asc" }] } },
+				})
+				: null;
+			return NextResponse.json({ ok: true, data: p });
+		}
+
+		// confirmer: latest visible plan only (REQUESTED/CONFIRMED/REJECTED)
+		if (isConfirmer(user, cycle, assignment)) {
+			const p = await prisma.kpiPlan.findFirst({
+				where: {
+				assignmentId: assignment.id,
+				confirmStatus: { in: ["REQUESTED", "CONFIRMED", "REJECTED"] },
+				},
+				orderBy: [{ version: "desc" }],
+				include: { nodes: { orderBy: [{ parentId: "asc" }, { sortOrder: "asc" }] } },
+			});
+			return NextResponse.json({ ok: true, data: p }); // may be null
+		}
+
+		return NextResponse.json({ ok: false, message: "forbidden" }, { status: 403 });
+	} catch (e: any) {
+		return NextResponse.json({ ok: false, message: e?.message ?? "error" }, { status: e?.status ?? 500 });
 	}
 }

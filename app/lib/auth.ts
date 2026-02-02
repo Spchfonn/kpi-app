@@ -29,9 +29,9 @@ export async function getOptionalUser() {
 	return session.user;
 }
 
-export async function requireUser(): Promise<{ id: string; employeeId: string }> {
+export async function requireUser(): Promise<{ id: string; employeeId: string; isAdmin: boolean }> {
 	const user = await getOptionalUser();
 	if (!user) throw new AuthError("Unauthorized", 401);
 	if (!user.employeeId) throw new Error("User has no employeeId");
-  	return { id: user.id, employeeId: user.employeeId };
+  	return { id: user.id, employeeId: user.employeeId, isAdmin: user.isAdmin };
 }
