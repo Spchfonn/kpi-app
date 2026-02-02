@@ -600,7 +600,18 @@ export default function TwoLevelKpiTable({
 														}}
 														kpiTypes={kpiTypes}
 														unit={c.unit ?? ""}
-														onUnitChange={(v) => updateChild(pKey, cKey, { unit: v || null })}
+														onUnitChange={(v) => {
+															const nextUnit = v || null;
+															const currentRubric = c.rubricDraft ?? c.type?.rubric;
+															let nextRubric = currentRubric;
+															if (currentRubric?.kind === "QUANTITATIVE_1_TO_5") {
+																nextRubric = {
+																	...currentRubric,
+																	levels: currentRubric.levels.map((lv) => ({ ...lv, unit: nextUnit })),
+																};
+															}
+															updateChild(pKey, cKey, { unit: nextUnit, rubricDraft: nextRubric });
+														}}
 														startDate={c.startDate ?? ""}
 														onStartDateChange={(v) => updateChild(pKey, cKey, { startDate: v || null })}
 														endDate={c.endDate ?? ""}

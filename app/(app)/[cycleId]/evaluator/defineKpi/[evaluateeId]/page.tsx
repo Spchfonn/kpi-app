@@ -155,6 +155,47 @@ const page = () => {
 
 	// for handle if click cancel in edit mode
 	const [draftTree, setDraftTree] = useState<Node[]>([]);
+	const { isWeightValid, validationErrorMsg } = useMemo(() => {
+    // 1. เช็คผลรวมของ Level 1 (Groups)
+    // หมายเหตุ: ถ้าข้อมูลตั้งต้นไม่มี Level 1 (เป็น Item เลย) ก็จะเช็ครวมกัน
+    const totalLevel1 = draftTree.reduce((sum, node) => sum + (Number(node.weightPercent) || 0), 0);
+    
+    // ถ้าไม่มีข้อมูลเลย ให้ถือว่าผ่านไปก่อน (หรือจะให้ผิดก็ได้แล้วแต่ Logic)
+    if (draftTree.length > 0 && totalLevel1 !== 100) {
+      return { 
+        isWeightValid: false, 
+        validationErrorMsg: `น้ำหนักรวมของกลุ่ม (Level 1) ต้องเท่ากับ 100% (ปัจจุบัน ${totalLevel1}%)` 
+      };
+    }
+
+    // 2. เช็คผลรวมของ Level 2 (Items ภายในแต่ละ Group)
+    for (const group of draftTree) {
+      // เช็คเฉพาะ Group ที่มีลูก
+      if (group.children && group.children.length > 0) {
+        const totalLevel2 = group.children.reduce((sum, child) => sum + (Number(child.weightPercent) || 0), 0);
+        if (totalLevel2 !== 100) {
+          return { 
+            isWeightValid: false, 
+            validationErrorMsg: `น้ำหนักรวมในกลุ่ม "${group.title}" ต้องเท่ากับ 100% (ปัจจุบัน ${totalLevel2}%)` 
+          };
+        }
+      }
+
+      // 3. เช็คเกณฑ์คะแนนเชิงคุณภาพ (Qualitative)
+      for (const item of group.children) {
+        const rubric = item.rubricDraft ?? item.type?.rubric;
+        if (rubric?.kind === "QUALITATIVE_CHECKLIST") {
+           const checklist = rubric.checklist ?? [];
+           const total = checklist.reduce((sum: number, x: any) => sum + (Number(x.weight_percent) || 0), 0);
+           if (total !== 100) {
+              return { isWeightValid: false, validationErrorMsg: `น้ำหนักรวมของเกณฑ์คะแนนใน "${item.title}" ต้องเท่ากับ 100% (ปัจจุบัน ${total}%)` };
+           }
+        }
+      }
+    }
+
+    return { isWeightValid: true, validationErrorMsg: "" };
+  }, [draftTree]);
 
 	// for confirm delete
 	const [confirmOpenDelete, setConfirmOpenDelete] = useState(false);
@@ -490,10 +531,29 @@ const page = () => {
 							</>
 						) : (
 							<>
-							<Button onClick={cancelEdit} primaryColor="red">ยกเลิก</Button>
-							<Button onClick={saveEdit} variant="primary">บันทึก</Button>
-							</>
-						)}
+                      {/* [ส่วนที่ต้องเพิ่ม]: แสดงข้อความเตือนสีแดงถ้าน้ำหนักผิด */}
+                      {!isWeightValid && (
+                        <div className="flex items-center text-myApp-red text-sm font-medium animate-pulse mr-2">
+                           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                           </svg>
+                           {validationErrorMsg}
+                        </div>
+                      )}
+
+                      <Button onClick={cancelEdit} primaryColor="red">ยกเลิก</Button>
+                      
+                      {/* [ส่วนที่ต้องแก้]: เพิ่ม disabled={!isWeightValid} */}
+                      <Button 
+                         onClick={saveEdit} 
+                         variant="primary" 
+                         disabled={!isWeightValid || saving} 
+                         className={!isWeightValid ? "opacity-50 cursor-not-allowed" : ""}
+                      >
+                         บันทึก
+                      </Button>
+                      </>
+                   )}
 					</div>
 				}
 			</div>

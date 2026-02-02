@@ -26,6 +26,8 @@ type Props = {
 
 	endDate: string; // YYYY-MM-DD
 	onEndDateChange: (v: string) => void;
+
+	requirementText?: string;
 };
 
 function TypePill({
@@ -87,6 +89,7 @@ export default function KpiDetailsBar({
 		onStartDateChange,
 		endDate,
 		onEndDateChange,
+		requirementText,
 	}: Props) {
 
 	const isEdit = mode === "edit";
@@ -156,7 +159,7 @@ export default function KpiDetailsBar({
 				<div className="relative">
 					<select
 						value={unit ?? ""}
-						disabled={!isEdit}
+						disabled={!isEdit || activeKind !== "QUANTITATIVE"}
 						onChange={(e) => onUnitChange(e.target.value)}
 						className="
 						appearance-none
