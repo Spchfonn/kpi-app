@@ -4,7 +4,6 @@ import React, { useMemo } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { FiFileText, FiUser } from "react-icons/fi";
 
-type PlanConfirmStatus = "DRAFT" | "REQUESTED" | "CONFIRMED" | "REJECTED" | "CANCELLED";
 type StripColor = "red" | "green" | "yellow";
 
 const stripBg: Record<StripColor, string> = {
@@ -13,20 +12,11 @@ const stripBg: Record<StripColor, string> = {
   yellow: "bg-myApp-yellow",
 };
 
-const STATUS_TO_STRIP_COLOR: Record<PlanConfirmStatus, StripColor> = {
-  DRAFT: "red",
-  REQUESTED: "yellow", // รออนุมัติ
-  CONFIRMED: "green",  // อนุมัติแล้ว
-  REJECTED: "red",
-  CANCELLED: "red",
-};
-
 type Props = {
-  id: string;
+  assignmentId: string;
   name: string;
   title: string;
   stripColor?: StripColor;
-  status?: PlanConfirmStatus;
 };
 
 function PillButton({
@@ -56,46 +46,26 @@ function PillButton({
 	);
   }
 
-export default function EvaluateeCardForDefineKpi({
-  id,
+export default function EvaluateeCardForSummaryKpi({
+  assignmentId,
   name,
   title,
   stripColor = "red",
-  status,
 }: Props) {
 	const router = useRouter();
 	const pathname = usePathname();
-
-	const activeStripColor: StripColor = useMemo(() => {
-    if (!status) return stripColor; // ถ้าไม่มี status ใช้สี default
-
-    const normalizedStatus = status.toUpperCase() as PlanConfirmStatus;
-    return STATUS_TO_STRIP_COLOR[normalizedStatus] || stripColor;
-  }, [status, stripColor]);
   
-	// หา base path ของหน้าปัจจุบันให้เป็น /.../defineKpi หรือ /.../evaluateKpi
+	// หา base path ของหน้าปัจจุบันให้เป็น /.../evaluateKpi
 	const base = useMemo(() => {
 	  if (!pathname) return "";
   
-	  // ตัวอย่าง pathname:
-	  // /1/evaluator/defineKpi
-	  // /1/evaluator/defineKpi/123
-	  // /1/evaluator/evaluateKpi
-	  // /1/evaluator/evaluateKpi/123
 	  const parts = pathname.split("/").filter(Boolean);
-  
-	  const idxDefine = parts.indexOf("defineKpi");
-	  if (idxDefine !== -1) return "/" + parts.slice(0, idxDefine + 1).join("/");
-  
-	  const idxEval = parts.indexOf("evaluateKpi");
-	  if (idxEval !== -1) return "/" + parts.slice(0, idxEval + 1).join("/");
-  
-	  // fallback (ถ้าเรียกการ์ดจากที่อื่น) — เลือก defineKpi ไว้ก่อน
-	  return "/" + parts.slice(0, 2).join("/") + "/evaluator/defineKpi";
+
+	  return "/" + parts.slice(0, 2).join("/") + "/evaluatee/summaryKpi";
 	}, [pathname]);
   
-	const profileHref = `${base}/${id}/profile`;
-	const defineKpiHref = `${base}/${id}`;
+	const profileHref = `${base}/${assignmentId}/profile`;
+	const summaryKpiHref = `${base}/${assignmentId}`;
 
 	return (
 		<div
@@ -113,7 +83,7 @@ export default function EvaluateeCardForDefineKpi({
 			{/* card */}
 			<div className="bg-myApp-white rounded-2xl shadow-sm px-10 py-4 flex gap-8 items-start">
 				{/* left red strip */}
-				<div className={`absolute left-0 top-0 h-full w-5 rounded-l-2xl ${stripBg[activeStripColor]}`} />
+				<div className={`absolute left-0 top-0 h-full w-5 rounded-l-2xl ${stripBg[stripColor]}`} />
 
 				<div>
 					<div className="flex flex-1 gap-4">
@@ -141,7 +111,7 @@ export default function EvaluateeCardForDefineKpi({
 					{/* tabs */}
 					<div className="mt-3 flex flex-wrap gap-3">
 						<PillButton href="/user/dashboard">Dashboard</PillButton>
-						<PillButton href={defineKpiHref}>กำหนดตัวชี้วัด</PillButton>
+						<PillButton href={summaryKpiHref}>ดูผลการประเมินตัวชี้วัด</PillButton>
 					</div>
 				</div>
 			</div>

@@ -19,6 +19,8 @@ function getLoginUser(): LoginUser | null {
 	}
 }
 
+type GateState = { DEFINE: boolean; EVALUATE: boolean; SUMMARY: boolean };
+
 type PlanConfirmStatus = "DRAFT" | "REQUESTED" | "CONFIRMED" | "REJECTED" | "CANCELLED";
 
 type Item = {
@@ -39,26 +41,36 @@ export default function Page({ params }: { params: { id: string } })  {
 	const router = useRouter();
 	const [items, setItems] = useState<Item[]>([]);
 	const [loading, setLoading] = useState(true);
+	const [gates, setGates] = useState<GateState | null>(null);
 
 	useEffect(() => {
 		(async () => {
 			const u = getLoginUser();
-			console.log("--------- LOGIN USER ---------", getLoginUser());
 			if (!u?.employeeId || !u?.cycle?.id) {
 				router.push("/sign-in");
 				return;
 			}
 
 			setLoading(true);
+
+			// 1) gates
+			const gatesRes = await fetch(`/api/evaluationCycles/${encodeURIComponent(u.cycle.id)}/gates`, { cache: "no-store" });
+			const gatesJson = await gatesRes.json();
+			if (gatesJson.ok) setGates(gatesJson.gates);
+
+			// 2) list evaluatees for define
 			const res = await fetch(
 				`/api/evaluationAssignments/evaluatees?cyclePublicId=${encodeURIComponent(u.cycle.id)}&evaluatorId=${encodeURIComponent(u.employeeId)}`,
 				{ cache: "no-store" }
 			);
 			const j = await res.json();
 			if (j.ok) setItems(j.data.items);
+
 			setLoading(false);
 		})();
 	}, [router]);
+
+	const defineOpen = gates?.DEFINE ?? false;
 
 	return (
 	<>
@@ -69,6 +81,12 @@ export default function Page({ params }: { params: { id: string } })  {
 					<DefinedStatus/>
 				</div>
 			</div>
+
+			{!defineOpen && (
+				<div className="mb-4 rounded-lg border border-yellow-200 bg-yellow-50 p-3 text-sm text-yellow-800">
+					ตอนนี้ยังไม่เปิดช่วง “กำหนดตัวชี้วัด” คุณสามารถดูรายการได้ แต่จะไม่สามารถแก้/ส่งตัวชี้วัดได้
+				</div>
+			)}
 
 			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 				{items.map((x) => (

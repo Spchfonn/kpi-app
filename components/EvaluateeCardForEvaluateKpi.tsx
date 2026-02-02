@@ -13,7 +13,7 @@ const stripBg: Record<StripColor, string> = {
 };
 
 type Props = {
-  id: string;
+  assignmentId: string;
   name: string;
   title: string;
   stripColor?: StripColor;
@@ -47,7 +47,7 @@ function PillButton({
   }
 
 export default function EvaluateeCardForEvaluateKpi({
-  id,
+  assignmentId,
   name,
   title,
   stripColor = "red",
@@ -71,8 +71,8 @@ export default function EvaluateeCardForEvaluateKpi({
 	  return "/" + parts.slice(0, 2).join("/") + "/evaluator/defineKpi";
 	}, [pathname]);
   
-	const profileHref = `${base}/${id}/profile`;
-	const evaluateKpiHref = `${base}/${id}`;
+	const profileHref = `${base}/${assignmentId}/profile`;
+	const evaluateKpiHref = `${base}/${assignmentId}`;
 
 	return (
 		<div

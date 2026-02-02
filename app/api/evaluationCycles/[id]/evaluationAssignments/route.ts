@@ -8,13 +8,9 @@ function uniqBy<T>(arr: T[], keyFn: (x: T) => string) {
 	return [...m.values()];
 }
 
-export async function GET(
-	req: Request,
-	{ params }: { params: Promise<{ id: string }> }
-	) {
-	const { id } = await params
-	const cycleId = Number(id);
-	if (!Number.isFinite(cycleId)) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+	const { id: cyclePublicId } = await params;
+	if (!cyclePublicId) {
 		return NextResponse.json({ ok: false, message: "invalid id" }, { status: 400 });
 	}
 
@@ -28,6 +24,19 @@ export async function GET(
 		);
 	}
 
+	// 1) lookup cycle db id
+	const cycle = await prisma.evaluationCycle.findUnique({
+		where: { publicId: cyclePublicId },
+		select: { id: true },
+	});
+
+	if (!cycle) {
+		return NextResponse.json({ ok: false, message: "not found" }, { status: 404 });
+	}
+
+	const cycleId = cycle.id;
+
+	// 2) fetch assignments
 	const assignments = await prisma.evaluationAssignment.findMany({
 		where: { cycleId },
 		select: {
@@ -35,22 +44,22 @@ export async function GET(
 			weightPercent: true,
 			evaluator: {
 				select: {
-					id: true,
-					employeeNo: true,
-					name: true,
-					lastName: true,
-					position: true,
-					level: true,
+				id: true,
+				employeeNo: true,
+				name: true,
+				lastName: true,
+				position: { select: { name: true } },
+				level: { select: { name: true } },
 				},
 			},
 			evaluatee: {
 				select: {
-					id: true,
-					employeeNo: true,
-					name: true,
-					lastName: true,
-					position: true,
-					level: true,
+				id: true,
+				employeeNo: true,
+				name: true,
+				lastName: true,
+				position: { select: { name: true } },
+				level: { select: { name: true } },
 				},
 			},
 		},
@@ -65,22 +74,22 @@ export async function GET(
 	 */
 	if (groupBy === "evaluator") {
 		const evaluators = uniqBy(
-			assignments.map((a) => a.evaluator).filter(Boolean),
-			(u) => u.id
+			assignments.map((a) => a.evaluator).filter(Boolean) as any[],
+			(u: any) => u.id
 		);
-	  
-		const groups = evaluators.map((ev) => {
+
+		const groups = evaluators.map((ev: any) => {
 			const rows = assignments.filter((a) => a.evaluator?.id === ev.id);
-		
+
 			const evaluatees = rows.map((a) => ({
 				...a.evaluatee!,
 				weightPercent: a.weightPercent ?? 0,
 				pairId: a.id,
 			}));
-		
+
 			return { evaluator: ev, evaluatees };
 		});
-	  
+
 		return NextResponse.json({ ok: true, data: groups });
 	}
 
@@ -88,21 +97,21 @@ export async function GET(
 	 * groupBy = evaluatee
 	 */
 	const evaluatees = uniqBy(
-		assignments.map((a) => a.evaluatee).filter(Boolean),
-		(u) => u.id
+		assignments.map((a) => a.evaluatee).filter(Boolean) as any[],
+		(u: any) => u.id
 	);
-	  
-	const groups = evaluatees.map((ee) => {
+
+	const groups = evaluatees.map((ee: any) => {
 		const rows = assignments.filter((a) => a.evaluatee?.id === ee.id);
-	  
+
 		const evaluators = rows.map((a) => ({
 			...a.evaluator!,
 			weightPercent: a.weightPercent ?? 0,
 			pairId: a.id,
 		}));
-	  
+
 		return { evaluator: ee, evaluatees: evaluators };
 	});
 
-  	return NextResponse.json({ ok: true, data: groups });
+	return NextResponse.json({ ok: true, data: groups });
 }

@@ -89,6 +89,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ assignment
 				evaluatorId: true,
 				evaluateeId: true,
 				currentPlanId: true,
+				evalStatus: true,
 			},
 		});
 		if (!assignment) {
@@ -102,39 +103,39 @@ export async function GET(_: Request, { params }: { params: Promise<{ assignment
 		});
 		if (!cycle) forbid("cycle not found", 404);
 
+		// helper to load plan by id
+		const loadPlanById = async (planId: string) => {
+			return prisma.kpiPlan.findUnique({
+				where: { id: planId },
+				include: { nodes: { orderBy: [{ parentId: "asc" }, { sortOrder: "asc" }] } },
+			});
+		};
+	  
+		let plan: any = null;
+
 		// admin: currentPlan
 		if (user.isAdmin) {
-			const p = assignment.currentPlanId
-				? await prisma.kpiPlan.findUnique({
-					where: { id: assignment.currentPlanId },
-					include: { nodes: { orderBy: [{ parentId: "asc" }, { sortOrder: "asc" }] } },
-				})
-				: null;
-			return NextResponse.json({ ok: true, data: p });
+			plan = assignment.currentPlanId ? await loadPlanById(assignment.currentPlanId) : null;
+			return NextResponse.json({ ok: true, data: { assignment: { id: assignment.id, evalStatus: assignment.evalStatus }, plan } });
 		}
 
 		// define owner: currentPlan (including draft)
 		if (isDefineOwner(user, cycle, assignment)) {
-			const p = assignment.currentPlanId
-				? await prisma.kpiPlan.findUnique({
-					where: { id: assignment.currentPlanId },
-					include: { nodes: { orderBy: [{ parentId: "asc" }, { sortOrder: "asc" }] } },
-				})
-				: null;
-			return NextResponse.json({ ok: true, data: p });
+			plan = assignment.currentPlanId ? await loadPlanById(assignment.currentPlanId) : null;
+			return NextResponse.json({ ok: true, data: { assignment: { id: assignment.id, evalStatus: assignment.evalStatus }, plan } });
 		}
 
 		// confirmer: latest visible plan only (REQUESTED/CONFIRMED/REJECTED)
 		if (isConfirmer(user, cycle, assignment)) {
-			const p = await prisma.kpiPlan.findFirst({
+			plan = await prisma.kpiPlan.findFirst({
 				where: {
-				assignmentId: assignment.id,
-				confirmStatus: { in: ["REQUESTED", "CONFIRMED", "REJECTED"] },
+					assignmentId: assignment.id,
+					confirmStatus: { in: ["REQUESTED", "CONFIRMED", "REJECTED"] },
 				},
 				orderBy: [{ version: "desc" }],
 				include: { nodes: { orderBy: [{ parentId: "asc" }, { sortOrder: "asc" }] } },
 			});
-			return NextResponse.json({ ok: true, data: p }); // may be null
+			return NextResponse.json({ ok: true, data: { assignment: { id: assignment.id, evalStatus: assignment.evalStatus }, plan } });
 		}
 
 		return NextResponse.json({ ok: false, message: "forbidden" }, { status: 403 });

@@ -36,6 +36,8 @@ export default function Page({ params }: { params: { id: string } })  {
 	const router = useRouter();
 	const [items, setItems] = useState<Item[]>([]);
 	const [loading, setLoading] = useState(true);
+	const u = getLoginUser();
+	const cyclePublicId = u?.cycle?.id;
 
 	useEffect(() => {
 		(async () => {
@@ -70,14 +72,26 @@ export default function Page({ params }: { params: { id: string } })  {
 			</div>
 
 			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-				{items.map((x) => (
-				<EvaluateeCardForEvaluateKpi
-					key={x.evaluatee.id}
-					id={x.evaluatee.id}
-					name={x.evaluatee.fullName}
-					title={x.evaluatee.title}
-				/>
-				))}
+
+			{items.map((x) => {
+				const clickable = !!cyclePublicId;
+				return (
+					<div
+					key={x.assignmentId}
+					onClick={() => {
+						if (!clickable) return;
+						router.push(`/${encodeURIComponent(cyclePublicId!)}/evaluator/evaluateKpi/${encodeURIComponent(x.assignmentId)}`);
+					}}
+					className={clickable ? "cursor-pointer" : "opacity-50 cursor-not-allowed"}
+					>
+						<EvaluateeCardForEvaluateKpi
+							assignmentId={x.assignmentId}
+							name={x.evaluatee.fullName}
+							title={x.evaluatee.title}
+						/>
+					</div>
+				);
+			})}
 			</div>
 		</div>
 	</>

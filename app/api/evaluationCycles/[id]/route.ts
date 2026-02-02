@@ -63,25 +63,31 @@ async function checkKpiDefineModeLocked(cycleId: number) {
 	};
 }
 
-async function readParamsId(
-	params: { id: string } | Promise<{ id: string }>
-  ) {
+async function readParamsPublicId(params: { id: string } | Promise<{ id: string }>) {
 	const p = await params;
-	const cycleId = Number(p.id);
-	return cycleId;
+	const cyclePublicId = p.id;
+	if (!cyclePublicId || typeof cyclePublicId !== "string") return null;
+	return cyclePublicId;
+}
+
+async function findCycleByPublicId(publicId: string) {
+	return prisma.evaluationCycle.findUnique({
+	  where: { publicId },
+	  select: { id: true, startDate: true, endDate: true, status: true, kpiDefineMode: true, name: true, year: true, round: true, publicId: true, createdAt: true, updatedAt: true, code: true },
+	});
 }
 
 export async function GET(
 		_req: Request,
 		{ params }: { params: Promise<{ id: string }> }
 	) {
-		const cycleId = await readParamsId(params as any); 
+	const publicId = await readParamsPublicId(params);
 
-	if (!Number.isFinite(cycleId)) {
+	if (!publicId) {
 		return NextResponse.json({ ok: false, message: "invalid id" }, { status: 400 });
 	}
 
-	const c = await prisma.evaluationCycle.findUnique({ where: { id : cycleId } });
+	const c = await prisma.evaluationCycle.findUnique({ where: { publicId } });
 	if (!c) {
 		return NextResponse.json({ ok: false, message: "not found" }, { status: 404 });
 	}
@@ -101,10 +107,18 @@ export async function PATCH(
   { params }: { params: { id: string } | Promise<{ id: string }> }
 ) {
 
-	const cycleId = await readParamsId(params);
-
-	if (!Number.isFinite(cycleId)) {
+	const publicId = await readParamsPublicId(params);
+	if (!publicId) {
 		return NextResponse.json({ ok: false, message: "invalid id" }, { status: 400 });
+	}
+
+	// lookup db id for lock checks
+	const cycle = await prisma.evaluationCycle.findUnique({
+		where: { publicId },
+		select: { id: true, startDate: true, status: true, kpiDefineMode: true },
+	});
+	if (!cycle) {
+		return NextResponse.json({ ok: false, message: "not found" }, { status: 404 });
 	}
   
 	const body = await req.json().catch(() => null);
@@ -133,7 +147,7 @@ export async function PATCH(
   
 	try {
 		if (v.data.kpiDefineMode !== undefined) {
-			const lock = await checkKpiDefineModeLocked(cycleId);
+			const lock = await checkKpiDefineModeLocked(cycle.id);
 			if (!lock.ok) {
 			  	return NextResponse.json({ ok: false, message: "not found" }, { status: 404 });
 			}
@@ -159,7 +173,7 @@ export async function PATCH(
 		}
 
 		const updated = await prisma.evaluationCycle.update({
-			where: { id: cycleId },
+			where: { publicId },
 			data,
 		});
 	
@@ -180,16 +194,14 @@ export async function PATCH(
 }
 
 export async function DELETE(_req: Request, { params }: { params: { id: string } | Promise<{ id: string }> }) {
-	const cycleId = await readParamsId(params);
 
-	console.log(cycleId)
-  
-	if (!Number.isFinite(cycleId)) {
-	  	return NextResponse.json({ ok: false, message: "invalid id" }, { status: 400 });
+	const publicId = await readParamsPublicId(params);
+	if (!publicId) {
+		return NextResponse.json({ ok: false, message: "invalid id" }, { status: 400 });
 	}
   
 	const cycle = await prisma.evaluationCycle.findUnique({
-		where: { id: cycleId },
+		where: { publicId },
 		select: { id: true },
 	});
   
@@ -199,7 +211,7 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
   
 	// check that this cycle has plan or not
 	const planCount = await prisma.kpiPlan.count({
-	  	where: { assignment: { cycleId } },
+	  	where: { assignment: { cycleId: cycle.id } },
 	});
   
 	if (planCount > 0) {
@@ -217,12 +229,12 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
 		await prisma.$transaction(async (tx) => {
 			// no plan → can delete assignment
 			await tx.evaluationAssignment.deleteMany({
-				where: { cycleId },
+				where: { cycleId: cycle.id },
 			});
 	
 			// and then delete cycle
 			await tx.evaluationCycle.delete({
-				where: { id: cycleId },
+				where: { id: cycle.id },
 			});
 		});
 	

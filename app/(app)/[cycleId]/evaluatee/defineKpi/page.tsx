@@ -94,8 +94,7 @@ export default function Page({ params }: { params: { id: string } }) {
                   name={x.evaluator.fullName}
                   title={x.evaluator.title}
                   kpiDefineMode={kpiDefineMode}
-                  planId={x.currentPlanId}
-                  // 2. ส่งค่าไปให้ Card ตรงๆ (ใส่ fallback "" กัน error)
+                  assignmentId={x.assignmentId}
                   cycleId={currentUserInfo?.cycleId || ""}
                   evaluateeId={currentUserInfo?.employeeId || ""}
                   status={x.confirmStatus}

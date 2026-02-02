@@ -1,15 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import AdminMenuBar, { type AdminTabKey } from "@/components/admin/AdminMenuBar";
-import EvaluationCycleTableClient from "./evaluationCycle/EvaluationCycleTableClient";
-
-type Cycle = {
-  id: number;
-  name: string;
-  startDate: string;
-  endDate: string;
-  status: "DEFINE" | "EVALUATE" | "SUMMARY";
-};
+import EvaluationCycleTableClient, { Cycle } from "./evaluationCycle/EvaluationCycleTableClient";
 
 export default function AdminHomePage() {
   const [tab, setTab] = useState<AdminTabKey>("evaluationCycles");
@@ -24,7 +16,18 @@ export default function AdminHomePage() {
       const res = await fetch("/api/evaluationCycles", { cache: "no-store" });
       const json = await res.json();
       if (!res.ok) throw new Error(json?.message ?? "โหลดข้อมูลไม่สำเร็จ");
-      setCycles(json.data ?? []);
+
+      const rows = (json.data ?? []).map((c: any) => ({
+        publicId: c.publicId,
+        id: c.id, // optional
+        name: c.name,
+        startDate: c.startDateYmd ?? c.startDate,
+        endDate: c.endDateYmd ?? c.endDate,
+        status: c.status,
+        activities: c.activities,
+      }));
+
+      setCycles(rows);
     } catch (e: any) {
       setError(e.message ?? "โหลดข้อมูลไม่สำเร็จ");
     } finally {
@@ -39,7 +42,7 @@ export default function AdminHomePage() {
   const renderTab = () => {
     if (tab === "evaluationCycles") {
       if (loading) return <div className="mt-4">Loading...</div>;
-      if (error) return <div className="mt-4 text-red-600">{error}</div>;
+      if (error) return <div className="mt-4 text-myApp-red">{error}</div>;
       return <EvaluationCycleTableClient cycles={cycles} />;
     }
 

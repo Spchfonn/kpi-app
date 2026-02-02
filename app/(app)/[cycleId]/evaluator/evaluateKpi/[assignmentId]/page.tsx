@@ -81,6 +81,8 @@ type SummaryRes = {
 
 type KpiType = { id: string; type: "QUANTITATIVE"|"QUALITATIVE"|"CUSTOM"; name: string; rubric?: any };
 
+type GateState = { DEFINE: boolean; EVALUATE: boolean; SUMMARY: boolean };
+
 const nodeKey = (n: KpiTreeNode) => n.id ?? n.clientId!;
 
 function computeSummary(tree: KpiTreeNode[], scores: Record<string, EvalScoreState>) {
@@ -161,10 +163,21 @@ function computeSummary(tree: KpiTreeNode[], scores: Record<string, EvalScoreSta
 	return { overallPercent, itemByNode, groupByNode };
 }
 
+async function fetchJson(url: string, init?: RequestInit) {
+	const res = await fetch(url, { cache: "no-store", ...(init || {}) });
+	const text = await res.text();
+	let j: any = null;
+	try { j = text ? JSON.parse(text) : null; } catch { j = null; }
+	if (!res.ok || !j?.ok) throw new Error(j?.message ?? `request failed (${res.status})`);
+	return j;
+}
+
 const page = () => {
 	const router = useRouter();
-	const params = useParams<{ evaluateeId: string }>();
-  	const evaluateeId = params.evaluateeId;
+	const { cycleId, assignmentId } = useParams<{ cycleId: string; assignmentId: string }>();
+
+	const [gates, setGates] = useState<GateState | null>(null);
+  	const evaluateOpen = gates?.EVALUATE ?? true;
 
 	const [planId, setPlanId] = useState<string | null>(null);
 	const [evaluateeName, setEvaluateeName] = useState<string>("");
@@ -178,11 +191,78 @@ const page = () => {
 	const [error, setError] = useState<string | null>(null);
 
 	const [tree, setTree] = useState<KpiTreeNode[]>([]);
-	const [types, setTypes] = useState<KpiType[]>([]);
 	const [scores, setScores] = useState<Record<string, EvalScoreState>>({});
 	const [scoresDraft, setScoresDraft] = useState<Record<string, EvalScoreState>>({});
 
 	const [evalStatus, setEvalStatus] = useState<EvalStatus>("NOT_STARTED");
+	
+	// 1) load gates
+	useEffect(() => {
+		(async () => {
+			try {
+				const j = await fetchJson(`/api/evaluationCycles/${encodeURIComponent(cycleId)}/gates`);
+				setGates(j.gates as GateState);
+			} catch (e) {
+				console.error(e);
+			}
+		})();
+	}, [cycleId]);
+
+	// 2) load assignment -> plan (assignment-first)
+	useEffect(() => {
+		(async () => {
+			setLoading(true);
+			setError(null);
+		
+			try {
+				const u = getLoginUser();
+				if (!u?.employeeId || !u?.cycle?.id) {
+					router.push("/sign-in");
+					return;
+				}
+		
+				// (A) get current visible plan for this assignment
+				const ap = await fetchJson(`/api/evaluationAssignments/${encodeURIComponent(assignmentId)}/plans`);
+				const pid = ap.data?.plan?.id;
+				if (!pid) throw new Error("ยังไม่มีตัวชี้วัดที่รับรองแล้วสำหรับการประเมิน");
+
+				setEvalStatus(ap.data.assignment.evalStatus as EvalStatus);
+				setPlanId(pid);
+		
+				// (B) plan detail (tree + rubric)
+				const plan = await fetchJson(`/api/plans/${encodeURIComponent(pid)}`);
+				setTree(plan.data.tree ?? []);
+		
+				// (C) load existing scores from currentSubmission (new API idea: use /result)
+				// ใช้ /evaluationAssignments/:id/result จะได้ node.currentSubmission (ถ้า evaluator/admin)
+				const result = await fetchJson(`/api/evaluationAssignments/${encodeURIComponent(assignmentId)}/result`);
+		
+				// result.data.items: [{ id, nodeType, submission }]
+				const items = result.data?.items ?? [];
+				const scoreMap: Record<string, EvalScoreState> = {};
+				for (const it of items) {
+					if (!it?.id || !it.submission) continue;
+					// note: คุณต้องแปลง payload ของ submission ให้เป็น EvalScoreState ให้ตรงกับ UI ของคุณ
+					// ถ้า payload เก็บรูปแบบ {score, checkedIds} อยู่แล้ว -> ใช้ตรงได้เลย
+					const payload = it.submission.payload;
+					if (payload && typeof payload === "object") {
+						scoreMap[it.id] = {
+							score: payload.score ?? it.submission.finalScore ?? it.submission.calculatedScore ?? "",
+							checkedIds: payload.checkedIds ?? [],
+						};
+					}
+				}
+				setScores(scoreMap);
+
+				setEvaluateeName(plan.data.evaluatee?.fullNameTh ?? "");
+		
+			} catch (e: any) {
+				setError(e?.message ?? "Load failed");
+			} finally {
+				setLoading(false);
+			}
+		})();
+	}, [assignmentId, cycleId, router]);
 
 	const preview = useMemo(() => {
 		if (!tree.length) return { overallPercent: null as number | null, itemByNode: {}, groupByNode: {} };
@@ -196,103 +276,13 @@ const page = () => {
 		};
 	}, [tree, scores]);
 
-	// find currentPlanId from employeeId
-	useEffect(() => {
-		if (!evaluateeId) return;
-	
-		const run = async () => {
-			try {
-				setLoading(true);
-				setError(null);
-		
-				const u = getLoginUser();
-				if (!u?.employeeId || !u?.cycle?.id) {
-					router.push("/sign-in");
-					return;
-				}
-		
-				const res = await fetch(
-					`/api/evaluationAssignments/evaluatees?cyclePublicId=${encodeURIComponent(
-						u.cycle.id
-					)}&evaluatorId=${encodeURIComponent(u.employeeId)}`,
-					{ cache: "no-store" }
-				);
-				const j = await res.json();
-		
-				if (!res.ok || !j.ok) throw new Error(j.message || "Load evaluatees failed");
-		
-				const items: EvaluateeItem[] = j.data?.items ?? [];
-				const found = items.find((x) => String(x.evaluatee.id) === String(evaluateeId));
-		
-				if (!found) throw new Error("ไม่พบผู้รับการประเมินคนนี้ในรายการ");
-				if (!found.currentPlanId) throw new Error("ผู้รับการประเมินคนนี้ยังไม่มี KPI Plan");
-		
-				setPlanId(found.currentPlanId);
-				setEvaluateeName(found.evaluatee.fullName);
-				setEvalStatus((found.evalStatus ?? "NOT_STARTED") as EvalStatus);
-			} catch (e: any) {
-				setError(e?.message ?? "Load failed");
-			} finally {
-				setLoading(false);
-			}
-		};
-	
-		run();
-	}, [evaluateeId, router]);
-
-	// load plan tree
-	useEffect(() => {
-		if (!planId) return;
-	
-		const run = async () => {
-			try {
-				setLoading(true);
-				setError(null);
-		
-				const [planRes, scoreRes] = await Promise.all([
-					fetch(`/api/kpiPlans/${planId}`, { cache: "no-store" }),
-					fetch(`/api/submissions?planId=${planId}`, { cache: "no-store" }),
-				]);
-		
-				const planJson: PlanRes = await planRes.json();
-				if (!planRes.ok || !planJson.ok || !planJson.data) {
-				 	throw new Error(planJson.message || "Load plan failed");
-				}
-				setTree(planJson.data.tree ?? []);
-		
-				let nextScores: Record<string, EvalScoreState> = {};
-
-				try {
-					const scoreJson = await scoreRes.json();
-					if (scoreRes.ok && scoreJson.ok) {
-						nextScores = scoreJson.data?.scores ?? {};
-					}
-					// not evaluate yet
-					else {
-						nextScores = {};
-					}
-				} catch {
-					nextScores = {};
-				}
-
-				setScores(nextScores);
-				setScoresDraft(nextScores);
-			} catch (e: any) {
-				setError(e?.message ?? "Load failed");
-			} finally {
-				setLoading(false);
-			}
-		};
-	
-		run();
-	}, [planId]);
 
 	// summary: count evaluated
 	const itemKeys = useMemo(() => {
 		const keys: string[] = [];
 		const walk = (nodes: KpiTreeNode[]) => {
 			for (const n of nodes) {
-				if (n.nodeType === "ITEM") keys.push(nodeKey(n));
+				if (n.nodeType === "ITEM" && n.id) keys.push(n.id);
 				if (n.children?.length) walk(n.children);
 			}
 		};
@@ -311,50 +301,109 @@ const page = () => {
 		return c;
 	}, [itemKeys, scores]);
 
+	const reloadScoresFromResult = async () => {
+		const result = await fetchJson(`/api/evaluationAssignments/${encodeURIComponent(assignmentId)}/result`);
+		const items = result.data?.items ?? [];
+		const scoreMap: Record<string, EvalScoreState> = {};
+		for (const it of items) {
+			if (!it?.id || !it.submission) continue;
+			const payload = it.submission.payload;
+			if (payload && typeof payload === "object") {
+				scoreMap[it.id] = {
+					score: payload.score ?? it.submission.finalScore ?? it.submission.calculatedScore ?? "",
+					checkedIds: payload.checkedIds ?? [],
+				};
+			}
+		}
+		setScores(scoreMap);
+		setScoresDraft(scoreMap);
+	};
+
+	const isSubmitted = evalStatus === "SUBMITTED";
+  	const lockEdit = !evaluateOpen || isSubmitted;
+
 	// edit console
 	const startEdit = () => {
-		if (evalStatus === "SUBMITTED") return;
+		if (lockEdit) return;
 		setScoresDraft(scores);
 		setMode("edit");
 	};
-
+	
 	const cancelEdit = () => {
 		setScores(scoresDraft);
 		setMode("view");
-	};
+	}
 
 	const saveEdit = async () => {
+		if (!planId) return;
+	
+		setSaving(true);
+		setError(null);
+	
 		try {
-			setSaving(true);
-			setError(null);
-		
-			const res = await fetch("/api/submissions", {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ planId, scores }),
-			});
-		
-			const text = await res.text();
-     		if (!res.ok) throw new Error(text || "Save failed");
-		
-			setScoresDraft(scores)
-			setMode("view");
-
-			const reloadScores = async () => {
-				const r = await fetch(`/api/submissions?planId=${planId}`, { cache: "no-store" });
-				const j = await r.json();
-				if (r.ok && j.ok) {
-					setScores(j.data.scores ?? {});
-					setScoresDraft(j.data.scores ?? {});
+			// flatten item nodes from tree
+			const itemNodes: KpiTreeNode[] = [];
+			const walk = (arr: KpiTreeNode[]) => {
+				for (const n of arr) {
+				if (n.nodeType === "ITEM") itemNodes.push(n);
+				if (n.children?.length) walk(n.children);
 				}
 			};
-
-			await reloadScores();
-			  
+			walk(tree);
+		
+			// ยิง score เฉพาะ item ที่มีค่า (score หรือ checklist)
+			for (const n of itemNodes) {
+				const k = n.id!;
+				const st = scores[k];
+				if (!st) continue;
+		
+				const hasScore = st.score !== "" && st.score !== null && st.score !== undefined;
+				const hasChecklist = Array.isArray(st.checkedIds) && st.checkedIds.length > 0;
+				if (!hasScore && !hasChecklist) continue;
+		
+				// payload ที่ backend เก็บ: แนะนำให้เก็บ { score, checkedIds } ตรง ๆ
+				await fetchJson(`/api/nodes/${encodeURIComponent(n.id!)}/score`, {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						payload: { score: st.score, checkedIds: st.checkedIds ?? [] },
+						finalScore: typeof st.score === "number" ? st.score : null,
+					}),
+				});
+			}
+		
+			await reloadScoresFromResult();
+			setMode("view");
+			setEvalStatus("IN_PROGRESS");
 		} catch (e: any) {
-		  	setError(e?.message ?? "Save failed");
+			setError(e?.message ?? "Save failed");
 		} finally {
-		  	setSaving(false);
+			setSaving(false);
+		}
+	};
+
+	const onSubmit = async () => {
+		setSummarizing(true);
+		setError(null);
+		try {
+			await fetchJson(`/api/evaluationAssignments/${encodeURIComponent(assignmentId)}/submitEvaluation`, {
+				method: "POST",
+			});
+
+			const ap2 = await fetchJson(`/api/evaluationAssignments/${encodeURIComponent(assignmentId)}/plans`);
+			setEvalStatus(ap2.data.assignment.evalStatus as EvalStatus);
+
+			setMode("view");
+		} catch (e: any) {
+			const msg = e?.message ?? "Submit failed";
+			if (/reeval|re-eval|needsreeval/i.test(msg)) {
+			  	setError("KPI ถูกแก้ไขหลังเริ่มประเมิน กรุณาประเมินใหม่ตาม KPI ล่าสุดก่อนส่งผล");
+			}
+			else {
+			  	setError(msg);
+			}
+		} finally {
+		  	setSummarizing(false);
 		}
 	};
 
@@ -382,43 +431,6 @@ const page = () => {
 		}
 	};
 
-	const onSubmit = async () => {
-		try {
-			setSummarizing(true);
-			setError(null);
-		
-			const res = await fetch("/api/submissions/submit", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ planId }),
-			});
-		
-			const json = await res.json();
-			if (!res.ok || !json.ok) throw new Error(json.message || "Submit failed");
-		
-			setEvalStatus("SUBMITTED");
-			setMode("view");
-		
-			// reload scores
-			const r = await fetch(`/api/submissions?planId=${planId}`, { cache: "no-store" });
-			const j = await r.json();
-			if (r.ok && j.ok) {
-				setScores(j.data.scores ?? {});
-				setScoresDraft(j.data.scores ?? {});
-			}
-		} catch (e: any) {
-		  	setError(e?.message ?? "Submit failed");
-		} finally {
-		  	setSummarizing(false);
-		}
-	};
-
-	const [confirmOpen, setConfirmOpen] = useState(false);
-	const cancelDelete = () => setConfirmOpen(false);
-	const confirmDelete = () => setConfirmOpen(false);
-
-	const isSubmitted = evalStatus === "SUBMITTED";
-
 	if (loading) return <div className="p-10">Loading...</div>;
 	if (error) return <div className="p-10 text-myApp-red">{error}</div>;
 
@@ -443,6 +455,12 @@ const page = () => {
 				</div>
 			</div>
 
+			{!evaluateOpen && (
+				<div className="mb-3 p-3 rounded-xl border border-yellow-200 bg-yellow-50 text-sm text-yellow-800">
+					ตอนนี้ยังไม่เปิดช่วง “ประเมินตัวชี้วัด” คุณสามารถดูข้อมูลได้ แต่ไม่สามารถแก้ไข/ส่งผลการประเมินได้
+				</div>
+			)}
+
 			{/* menu tab */}
 			<div className='flex items-center mb-3 gap-2.5'>
 				<Button 
@@ -463,7 +481,7 @@ const page = () => {
 								variant="primary"
 								primaryColor="green"
 								onClick={onSubmit}
-								disabled={summarizing || saving}
+								disabled={!evaluateOpen || summarizing || saving}
 							>
 								{summarizing ? "กำลังส่งผล..." : "ส่งผลการประเมิน"}
 							</Button>
@@ -474,6 +492,7 @@ const page = () => {
 								onClick={startEdit}
 								variant="primary"
 								primaryColor="orange"
+								disabled={lockEdit}
 							>
 								แก้ไขผลการประเมิน
 							</Button>
@@ -502,15 +521,6 @@ const page = () => {
 					onChangeScores={setScores}
 				/>
 			</div>
-
-			<ConfirmBox
-				open={confirmOpen}
-				message="ต้องการลบตัวชี้วัดแถวนี้ใช่หรือไม่?"
-				cancelText="ยกเลิก"
-				confirmText="ตกลง"
-				onCancel={cancelDelete}
-				onConfirm={confirmDelete}
-			/>
 		</div>
 	</>
   )
