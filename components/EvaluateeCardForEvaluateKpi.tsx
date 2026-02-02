@@ -6,10 +6,18 @@ import { FiFileText, FiUser } from "react-icons/fi";
 
 type StripColor = "red" | "green" | "yellow";
 
+type EvalStatus = "NOT_STARTED" | "IN_PROGRESS" | "SUBMITTED" | string;
+
 const stripBg: Record<StripColor, string> = {
   red: "bg-myApp-red",
   green: "bg-myApp-green",
   yellow: "bg-myApp-yellow",
+};
+
+const STATUS_TO_COLOR: Record<string, StripColor> = {
+  NOT_STARTED: "red",
+  IN_PROGRESS: "yellow",
+  SUBMITTED: "green",
 };
 
 type Props = {
@@ -17,6 +25,7 @@ type Props = {
   name: string;
   title: string;
   stripColor?: StripColor;
+  status?: string;
 };
 
 function PillButton({
@@ -51,6 +60,7 @@ export default function EvaluateeCardForEvaluateKpi({
   name,
   title,
   stripColor = "red",
+  status,
 }: Props) {
 	const router = useRouter();
 	const pathname = usePathname();
@@ -71,6 +81,11 @@ export default function EvaluateeCardForEvaluateKpi({
 	  return "/" + parts.slice(0, 2).join("/") + "/evaluator/defineKpi";
 	}, [pathname]);
   
+	const activeStripColor = useMemo(() => {
+		if (!status) return stripColor;
+		return STATUS_TO_COLOR[status] || stripColor;
+	}, [status, stripColor]);
+
 	const profileHref = `${base}/${id}/profile`;
 	const evaluateKpiHref = `${base}/${id}`;
 
@@ -90,7 +105,7 @@ export default function EvaluateeCardForEvaluateKpi({
 			{/* card */}
 			<div className="bg-myApp-white rounded-2xl shadow-sm px-10 py-4 flex gap-8 items-start">
 				{/* left red strip */}
-				<div className={`absolute left-0 top-0 h-full w-5 rounded-l-2xl ${stripBg[stripColor]}`} />
+				<div className={`absolute left-0 top-0 h-full w-5 rounded-l-2xl ${stripBg[activeStripColor]}`} />
 
 				<div>
 					<div className="flex flex-1 gap-4">

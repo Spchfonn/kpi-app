@@ -89,10 +89,12 @@ function computeSummary(tree: KpiTreeNode[], scores: Record<string, EvalScoreSta
 	const computeItemScore0to5 = (item: KpiTreeNode): number => {
 		const k = nodeKey(item);
 		const st = scores[k] ?? { score: "", checkedIds: [] };
+		
+		const rubric = item.rubric ?? item.type?.rubric;
 	
 		// QUALITATIVE
-		if (item.type?.rubric?.kind === "QUALITATIVE_CHECKLIST") {
-			const checklist = item.type.rubric.checklist ?? [];
+		if (rubric?.kind === "QUALITATIVE_CHECKLIST") {
+			const checklist = rubric.checklist ?? [];
 			const checked = new Set((st.checkedIds ?? []).map(String));
 	
 			const totalW = checklist.reduce((sum: number, x: any) => sum + Number(x.weight_percent ?? 0), 0) || 0;
@@ -250,7 +252,7 @@ const page = () => {
 				setError(null);
 		
 				const [planRes, scoreRes] = await Promise.all([
-					fetch(`/api/kpiPlans/${planId}`, { cache: "no-store" }),
+					fetch(`/api/plans/${planId}`, { cache: "no-store" }),
 					fetch(`/api/submissions?planId=${planId}`, { cache: "no-store" }),
 				]);
 		

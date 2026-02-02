@@ -252,7 +252,7 @@ const page = () => {
             // 2) get kpiTypes + plan tree (parallel)
             const [resTypes, resPlan] = await Promise.all([
                fetch("/api/kpiTypes", { cache: "no-store" }),
-               fetch(`/api/kpiPlans/${pid}`, { cache: "no-store" }),
+               fetch(`/api/plans/${pid}`, { cache: "no-store" }),
             ]);
       
             const jTypes = await resTypes.json();
@@ -297,7 +297,7 @@ const page = () => {
       try {
          const payload = { nodes: draftTree.map(stripForPut) };
       
-         const res = await fetch(`/api/kpiPlans/${planId}/tree`, {
+         const res = await fetch(`/api/plans/${planId}/tree`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
@@ -336,15 +336,15 @@ const page = () => {
      
       try {
          const endpoint = isRequested
-            ? `/api/kpiPlans/${planId}/cancelRequestConfirm`
-            : `/api/kpiPlans/${planId}/requestConfirm`;
+            ? `/api/plans/${planId}/cancelRequestConfirm`
+            : `/api/plans/${planId}/requestConfirm`;
       
          const res = await fetch(endpoint, { method: "POST" });
          const j = await res.json();
          if (!j.ok) throw new Error(j.message ?? "ทำรายการไม่สำเร็จ");
       
          const reloadPlanStatus = async () => {
-            const r = await fetch(`/api/kpiPlans/${planId}`, { cache: "no-store" });
+            const r = await fetch(`/api/plans/${planId}`, { cache: "no-store" });
             const j = await r.json();
             if (r.ok && j.ok) {
                setConfirmStatus(j.data.confirmStatus);

@@ -31,6 +31,8 @@ export function isConfirmer(user: any, cycle: any, assignment: any) {
 export function canViewPlan(user: any, cycle: any, assignment: any, plan: any) {
     if (user.isAdmin) return true;
 
+    if (isEvaluator(user, assignment)) return true;
+
     if (isDefineOwner(user, cycle, assignment)) return true;
 
     if (isConfirmer(user, cycle, assignment)) {
@@ -42,6 +44,6 @@ export function canViewPlan(user: any, cycle: any, assignment: any, plan: any) {
 
 export function assertCanViewPlan(user: any, cycle: any, assignment: any, plan: any) {
     if (!canViewPlan(user, cycle, assignment, plan)) {
-        forbid("forbidden: plan not visible to you");
+        forbid("ไม่สามารถดูตัวชี้วัดได้ในขณะนี้");
     }
 }

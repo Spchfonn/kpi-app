@@ -218,8 +218,8 @@ export default function TwoLevelKpiTableForEvaluateKpi({
 										const legacyType = toLegacyKpiType(t?.type ?? null);
 										const s = scores[cKey] ?? { score: "", checkedIds: [] };
 										const rubric = c.rubric ?? c.type?.rubric;
-										const criteria = t?.rubric?.kind === "QUALITATIVE_CHECKLIST"
-														? t.rubric.checklist.map((x: any, i: number) => ({
+										const criteria = rubric?.kind === "QUALITATIVE_CHECKLIST"
+														? rubric.checklist.map((x: any, i: number) => ({
 															id: String(i + 1),
 															weight: Number(x.weight_percent ?? 0),
 														}))
@@ -294,7 +294,7 @@ export default function TwoLevelKpiTableForEvaluateKpi({
 															{renderRubric(c)}
 														</div>
 														<div></div>
-														<div className="mb-auto text-smallBody font-medium text-myApp-blue">
+														<div className="text-center mb-auto pt-2 text-smallBody font-medium text-myApp-blue">
 															{requirementText}
 														</div>
 														<div></div>

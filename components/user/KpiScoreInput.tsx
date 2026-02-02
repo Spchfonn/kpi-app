@@ -65,7 +65,11 @@ export function getRequirementText(score: number | "", scale?: QuantScale, curre
    const displayUnit = UNIT_LABEL_MAP[rawUnit] || rawUnit;
    
    // 3. แก้บรรทัด return ให้ใช้ตัวแปร displayUnit (ไม่ใช่ cur.unit)
-   return `ต้องทำได้${op} ${cur.value} ${displayUnit}`;
+   return (
+      <>
+         ต้องทำได้<br />{op} {cur.value} {displayUnit}
+      </>
+   );
 
    // ------------- จบส่วนที่แก้ -------------
 }
