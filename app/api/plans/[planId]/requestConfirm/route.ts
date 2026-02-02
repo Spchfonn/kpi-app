@@ -118,7 +118,7 @@ export async function POST(_req: Request, ctx: { params: Promise<{ planId: strin
 
 		return NextResponse.json({ ok: true }, { status: 200 });
 	} catch (err: any) {
-		console.error("POST /api/kpiPlans/[planId]/requestConfirm error:", err);
+		console.error("POST /api/plans/[planId]/requestConfirm error:", err);
     	return NextResponse.json({ ok: false, message: err?.message ?? "Internal Server Error" }, { status: 500 });
 	}
 }

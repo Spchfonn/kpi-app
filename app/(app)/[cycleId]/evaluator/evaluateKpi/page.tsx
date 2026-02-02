@@ -23,6 +23,7 @@ type Item = {
 	assignmentId: string;
 	currentPlanId: string | null;
 	weightPercent: string;
+	evalStatus: string;
 	evaluatee: {
 		id: string;
 		fullName: string;
@@ -76,6 +77,7 @@ export default function Page({ params }: { params: { id: string } })  {
 					id={x.evaluatee.id}
 					name={x.evaluatee.fullName}
 					title={x.evaluatee.title}
+					status={x.evalStatus}
 				/>
 				))}
 			</div>

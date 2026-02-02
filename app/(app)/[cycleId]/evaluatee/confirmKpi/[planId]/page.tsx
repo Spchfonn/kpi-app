@@ -166,7 +166,7 @@ const page = () => {
 				// 1) load kpiTypes + plan
 				const [resTypes, resPlan] = await Promise.all([
 					fetch("/api/kpiTypes", { cache: "no-store" }),
-					fetch(`/api/kpiPlans/${planId}`, { cache: "no-store" }),
+					fetch(`/api/plans/${planId}`, { cache: "no-store" }),
 				]);
 		
 				const jTypes = await resTypes.json();
@@ -205,11 +205,11 @@ const page = () => {
 		setError("");
 	  
 		try {
-			const res = await fetch(`/api/kpiPlans/${planId}/confirmByEvaluatee`, { method: "POST" });
+			const res = await fetch(`/api/plans/${planId}/confirmByEvaluatee`, { method: "POST" });
 			const j = await res.json();
 			if (!j.ok) throw new Error(j.message ?? "ทำรายการไม่สำเร็จ");
 		
-			const r = await fetch(`/api/kpiPlans/${planId}`, { cache: "no-store" });
+			const r = await fetch(`/api/plans/${planId}`, { cache: "no-store" });
 			const jj = await r.json();
 			if (r.ok && jj.ok) {
 				setConfirmStatus(jj.data.confirmStatus);
@@ -229,11 +229,11 @@ const page = () => {
 		setError("");
 	  
 		try {
-			const res = await fetch(`/api/kpiPlans/${planId}/rejectByEvaluatee`, { method: "POST" });
+			const res = await fetch(`/api/plans/${planId}/rejectByEvaluatee`, { method: "POST" });
 			const j = await res.json();
 			if (!j.ok) throw new Error(j.message ?? "ทำรายการไม่สำเร็จ");
 		
-			const r = await fetch(`/api/kpiPlans/${planId}`, { cache: "no-store" });
+			const r = await fetch(`/api/plans/${planId}`, { cache: "no-store" });
 			const jj = await r.json();
 			if (r.ok && jj.ok) {
 				setConfirmStatus(jj.data.confirmStatus);
