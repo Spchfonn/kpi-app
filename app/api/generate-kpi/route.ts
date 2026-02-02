@@ -16,10 +16,9 @@ async function callChatGPT(messages: any[]) {
       Authorization: `Bearer ${OPENAI_API_KEY}`,
     },
     body: JSON.stringify({
-      model: "gpt-4o-mini",
+      model: "gpt-4.1",
       messages,
-      response_format: { type: "json_object" }, // เพิ่มบรรทัดนี้
-      temperature: 0.3,
+      response_format: { type: "json_object" },
     }),
   });
 
@@ -47,7 +46,7 @@ export async function POST(req: Request) {
        throw new Error("Request body is empty");
     }
     
-    const { evaluateeId } = body;
+    const { evaluateeId, kpiCount } = body;
     
     if (!evaluateeId) {
       return NextResponse.json(
@@ -78,6 +77,7 @@ export async function POST(req: Request) {
     const levelName = employee.level?.name || "ไม่ระบุระดับ";
     const orgName = employee.organization?.name || "ไม่ระบุแผนก";
     const jobDescription = employee.jobDescription || "- ไม่ได้ระบุรายละเอียดงาน -";
+    const kpiQuantityText = kpiCount ? `${kpiCount} ข้อ` : "6–8 ข้อ";
 
     /* ---------------- รอบที่ 1: สร้าง KPI ---------------- */
     const round1Messages = [
@@ -98,7 +98,7 @@ export async function POST(req: Request) {
 1) แนะนำ KPI ในรูปแบบ 2 ระดับ
    - ระดับที่ 1 = หมวดเป้าหมาย (3 หมวด)
    - ระดับที่ 2 = KPI รายข้อภายใต้หมวดนั้น
-2) จำนวน KPI ระดับที่ 2 รวมทั้งหมด 6–8 ข้อ
+2) จำนวน KPI ระดับที่ 2 รวมทั้งหมด ${kpiQuantityText} ข้อ *ห้ามขาดและห้ามเกิน
 3) KPI ทุกข้อต้อง:
    - วัดได้จริงจากแหล่งข้อมูลที่ระบุด้านบน
    - เป็น KPI ระดับบุคคล (Individual KPI) ไม่ใช่ KPI ทั้งทีมล้วนๆ
@@ -113,6 +113,7 @@ export async function POST(req: Request) {
 - ห้ามมีข้อความอื่นนอก JSON
 - ถ้าทำตามไม่ได้ ให้ตอบ {} เท่านั้น
 - title ให้ตอบเป็นภาษาไทยเท่านั้น
+- ใน 1 รอบต้องแนะนำ KPI คละอย่างน้อย 2 แบบ (Quantitative, Quenlitative, Custom)
 
 schema (ต้องใช้ key ตามนี้เท่านั้น):
 {
@@ -194,6 +195,7 @@ const round1Response = await callChatGPT(round1Messages);
    - timeframe
    - data_sources (ห้ามเพิ่มใหม่ ใช้ได้แค่ subset เดิม)
 4) KPI 1 รายการ ต้องเลือกวิธีวัดผลได้ “เพียงแบบเดียว” ตาม kpi_type เท่านั้น
+5) ใน 1 รอบต้องแนะนำ KPI คละอย่างน้อย 2 แบบ (Quantitative, Quenlitative, Custom)
 
 ข้อกำหนดตามประเภท KPI
 [1] quantitative
@@ -201,6 +203,8 @@ const round1Response = await callChatGPT(round1Messages);
 - target.value ต้องเป็น “ตัวเลข”
 - scoring ต้องมี 5 ระดับ (score = 1–5)
 - condition ต้องเป็นแค่ “ตัวเลข”
+- condition ห้ามซ้ำกันเกินไป
+
   ตัวอย่าง:
   "scoring": [
           {
