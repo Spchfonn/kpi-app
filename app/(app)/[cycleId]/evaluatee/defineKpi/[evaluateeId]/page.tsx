@@ -197,6 +197,8 @@ const page = () => {
    const [showAiModal, setShowAiModal] = useState(false);
    const [showInformModal, setShowInformModal] = useState(false);
    const [aiSelectedIds, setAiSelectedIds] = useState<Set<string>>(new Set());
+   const [showCountModal, setShowCountModal] = useState(false);
+   const [targetKpiCount, setTargetKpiCount] = useState<number>(5);
 
    useEffect(() => {
       (async () => {
@@ -360,55 +362,106 @@ const page = () => {
       }
    };
 
-   const generateKpiByAI = async () => {
-      try {
-         setIsGenerating(true);
-         setError("");
-         setShowInformModal(true); 
-   
-         const res = await fetch("/api/generate-kpi", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ evaluateeId }),
-         });
-   
-         const j = await res.json();
-         if (!j.success) throw new Error(j.error ?? "AI generate failed");
-   
-         // สร้าง Map สำหรับค้นหา Type Object เต็มรูปแบบตาม ID
-         const typeFullMap = new Map(types.map((t) => [t.type.toLowerCase(), t]));
-         
-         const unitMap = new Map<string, string>();
-         if (j.measurements?.kpi_measurements) {
-            j.measurements.kpi_measurements.forEach((m: any) => {
-               const u = m.measurement?.unit || m.measurement?.metric_name; 
-               if (m.kpi_code && u) unitMap.set(m.kpi_code, u);
+   const openAiCountModal = () => {
+      setTargetKpiCount(5); // reset default value
+      setShowCountModal(true);
+   };
+
+   const generateKpiByAI = async (count: number) => {
+         // ปิด Modal เลือกจำนวนก่อน
+         setShowCountModal(false);
+
+         try {
+            setIsGenerating(true);
+            setError("");
+            setShowInformModal(true); 
+      
+            // ส่งค่า kpiCount ไปยัง API
+            const res = await fetch("/api/generate-kpi", {
+               method: "POST",
+               headers: { "Content-Type": "application/json" },
+               body: JSON.stringify({ 
+                  evaluateeId,
+                  kpiCount: count // [NEW] ส่งจำนวนข้อที่ต้องการไปให้ API (ต้องไปแก้ฝั่ง API ให้รับค่านี้ด้วย)
+               }),
             });
-         }
-   
-         const aiNodes: Node[] = j.round1_raw.level1_groups.map((group: any) => ({
-            nodeType: "GROUP",
-            title: group.group_title,
-            description: group.group_goal,
-            weightPercent: group.group_percent,
-            children: group.level2_kpis.map((kpi: any) => {
-               const typeObj = typeFullMap.get(kpi.kpi_type.toLowerCase()); // ดึง Object Type ทั้งหมดมา
+      
+            const j = await res.json();
+            if (!j.success) throw new Error(j.error ?? "AI generate failed");
+      
+            // ... (Logic เดิมสำหรับการ map ข้อมูล unitMap, typeFullMap, aiNodes) ...
+            // ... Copy Code ส่วนเดิมมาวางตรงนี้ได้เลยครับ ...
+            // สร้าง Map สำหรับค้นหา Type Object เต็มรูปแบบตาม ID
+            const typeFullMap = new Map(types.map((t) => [t.type.toLowerCase(), t]));
+            
+            const unitMap = new Map<string, string>();
+            const measurementMap = new Map<string, any>();
+
+            if (j.measurements?.kpi_measurements) {
+               j.measurements.kpi_measurements.forEach((m: any) => {
+                  const u = m.measurement?.unit || m.measurement?.metric_name; 
+                  if (m.kpi_code && u) unitMap.set(m.kpi_code, u);
+                  if (m.kpi_code) measurementMap.set(m.kpi_code, m);
+               });
+            }
+
+            const aiNodes: Node[] = j.round1_raw.level1_groups.map((group: any) => ({
+               nodeType: "GROUP",
+               title: group.group_title,
+               description: group.group_goal,
+               weightPercent: group.group_percent,
+               children: group.level2_kpis.map((kpi: any) => {
+                  const typeObj = typeFullMap.get(kpi.kpi_type.toLowerCase());
+                  
+                  // Construct rubric from AI measurement
+                  let rubricDraft = null;
+                  const m = measurementMap.get(kpi.kpi_code);
+                  if (m) {
+                     const kpiType = kpi.kpi_type.toLowerCase();
+                     if (kpiType === "qualitative" && m.checklist?.length) {
+                        rubricDraft = {
+                           kind: "QUALITATIVE_CHECKLIST",
+                           checklist: m.checklist
+                        };
+                     } else if (kpiType === "quantitative" && m.scoring?.length) {
+                        rubricDraft = {
+                           kind: "QUANTITATIVE_1_TO_5",
+                           levels: m.scoring.map((s: any) => ({
+                              unit: unitMap.get(kpi.kpi_code) || "",
+                              score: s.score,
+                              value: s.condition,
+                              desc: `${s.condition}`,
+                           }))
+                        };
+                     } else if (kpiType === "custom" && m.scoring?.length) {
+                        rubricDraft = {
+                           kind: "CUSTOM_DESCRIPTION_1_TO_5",
+                           levels: m.scoring.map((s: any) => ({
+                              score: s.score,
+                              desc: s.condition
+                           }))
+                        };
+                     }
+                  }
+
                return {
                   nodeType: "ITEM",
                   title: kpi.title,
                   description: kpi.description,
                   weightPercent: kpi.kpi_percent,
-                  typeId: typeObj?.id ?? null, // เก็บ ID ไว้
-                  type: typeObj ?? null,       // ใส่ Object Type (ที่มี rubric) เข้าไปด้วย
+                  typeId: typeObj?.id ?? null,
+                  type: typeObj ?? null,
                   unit: unitMap.get(kpi.kpi_code) || null,
                   startDate: cycleStartIso,
                   endDate: cycleEndIso,
+                  rubricDraft: rubricDraft,
+                  rubric: rubricDraft,
                   children: [],
                };
             }),
          }));
    
-         const withDisplayNo = assignDisplayNo(aiNodes);
+      const withDisplayNo = assignDisplayNo(aiNodes);
          setAiTree(withDisplayNo);
          
          const allIds = new Set<string>();
@@ -426,10 +479,9 @@ const page = () => {
          setShowInformModal(false);
          setError(e.message ?? "ไม่สามารถสร้าง KPI จาก AI ได้");
       } finally {
-         setIsGenerating(false); // ปิด isGenerating
+         setIsGenerating(false);
       }
-   };
-   
+   };   
    const handleConfirmAiSelection = () => {
       const selectedFromAi = aiTree.reduce<Node[]>((acc, group) => {
          const groupKey = getNodeKey(group);
@@ -497,7 +549,7 @@ const page = () => {
             <Button
                variant="primary"
                primaryColor="pink"
-               onClick={generateKpiByAI}
+               onClick={openAiCountModal}
             >
                ให้ระบบช่วยแนะนำตัวชี้วัด
             </Button>
@@ -567,6 +619,56 @@ const page = () => {
                defaultEndDate={cycleEndIso}
             />
          </div>
+
+         {/* --- [NEW] Modal ถามจำนวน KPI --- */}
+         {showCountModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 animate-in fade-in">
+               <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 transform transition-all scale-100">
+                  <div className="text-center mb-6">
+                     <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-pink-100 mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-pink-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                        </svg>
+                     </div>
+                     <h3 className="text-xl font-medium text-myApp-blueDark">ระบุจำนวนตัวชี้วัด</h3>
+                     <p className="text-sm text-gray-500 mt-2">
+                        ต้องการให้ระบบแนะนำตัวชี้วัดกี่ข้อ?
+                     </p>
+                  </div>
+
+                  <div className="mb-6">
+                     <label className="block text-sm font-normal text-gray-600 mb-2">
+                        จำนวนข้อที่ต้องการ
+                     </label>
+                     <input
+                        type="number"
+                        min={1}
+                        max={20}
+                        value={targetKpiCount}
+                        onChange={(e) => setTargetKpiCount(Number(e.target.value))}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-pink-500 sm:text-sm text-center font-semibold text-lg text-myApp-blueDark"
+                     />
+                  </div>
+
+                  <div className="flex gap-3 justify-end">
+                     <Button
+                        variant="outline"
+                        primaryColor="red"
+                        onClick={() => setShowCountModal(false)}
+                     >
+                        ยกเลิก
+                     </Button>
+                     <Button
+                        variant="primary"
+                        primaryColor="green"
+                        onClick={() => generateKpiByAI(targetKpiCount)} // ส่งค่าที่เลือกไป generate
+                     >
+                        เริ่มสร้างตัวชี้วัด
+                     </Button>
+                  </div>
+               </div>
+            </div>
+         )}
 
          {/* --- 1. Inform Data Modal (ขณะรอ AI) --- */}
          {showInformModal && (

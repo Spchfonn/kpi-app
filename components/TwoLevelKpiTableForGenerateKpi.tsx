@@ -166,9 +166,8 @@ export default function TwoLevelKpiTableForGenerateKpi({
    };
 
    // Grid Layout Class
-   const colClass = mode === "edit"
-      ? "grid grid-cols-[1fr_100px_110px_48px] items-center"
-      : "grid grid-cols-[1fr_100px_110px] items-center";
+   const colClass =
+      mode === "edit" ? "grid grid-cols-[1fr_100px_48px] items-center" : "grid grid-cols-[1fr_100px] items-center";
 
    const [expanded, setExpanded] = useState<Record<string, boolean>>({});
    const isExpanded = (key: string) => expanded[key] ?? true;
@@ -278,7 +277,7 @@ export default function TwoLevelKpiTableForGenerateKpi({
    };
 
    const renderRubric = (c: KpiTreeNode) => {
-      const rubric = c.type?.rubric;
+      const rubric = c.rubricDraft ?? c.type?.rubric;
       if (!rubric) return null;
      
       switch (rubric.kind) {
@@ -309,10 +308,9 @@ export default function TwoLevelKpiTableForGenerateKpi({
       <div className="sticky top-0 z-10 bg-myApp-cream">
          <div className="bg-myApp-blue rounded-3xl shadow-sm px-4 py-4 text-myApp-cream text-button font-semibold">
             <div className={`${colClass} place-items-center`}>
-            <div>ตัวชี้วัด</div>
-            <div>ค่าน้ำหนัก</div>
-            <div>ความสัมพันธ์</div>
-            {mode === "edit" && <div />}
+                  <div>ตัวชี้วัด</div>
+                  <div>ค่าน้ำหนัก</div>
+                  {mode === "edit" && <div />}
             </div>
          </div>
       </div>
@@ -372,10 +370,6 @@ export default function TwoLevelKpiTableForGenerateKpi({
                             ) : (
                                <span className="text-body font-medium">{p.weightPercent}%</span>
                             )}
-                         </div>
-
-                         <div className="flex items-center justify-center text-myApp-blueDark">
-                            {/* Relation placeholder */}
                          </div>
 
                          {/* actions */}
@@ -447,10 +441,6 @@ export default function TwoLevelKpiTableForGenerateKpi({
                                          ) : (
                                             <span className="font-semibold">{c.weightPercent}%</span>
                                          )}
-                                      </div>
-
-                                      <div className="flex items-center justify-center text-myApp-blueDark">
-                                         {/* Relation placeholder */}
                                       </div>
 
                                       <div className="flex items-center justify-end text-myApp-grey">
