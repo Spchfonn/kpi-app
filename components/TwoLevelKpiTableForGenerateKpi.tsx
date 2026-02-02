@@ -278,7 +278,7 @@ export default function TwoLevelKpiTableForGenerateKpi({
    };
 
    const renderRubric = (c: KpiTreeNode) => {
-      const rubric = c.type?.rubric;
+      const rubric = c.rubricDraft ?? c.type?.rubric;
       if (!rubric) return null;
      
       switch (rubric.kind) {
