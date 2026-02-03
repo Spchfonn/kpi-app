@@ -56,6 +56,13 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
 	const cycleId = cycle.id;
 
+	const acks = await prisma.evaluateeCycleAcknowledgement.findMany({
+		where: { cycleId },
+		select: { evaluateeId: true },
+	});
+	  
+	const ackSet = new Set(acks.map((a) => a.evaluateeId));
+
 	// 2) get evaluation assignments of this cycle
 	const assignments = await prisma.evaluationAssignment.findMany({
 		where: { cycleId },
@@ -124,7 +131,9 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 			? "ยังไม่สมบูรณ์"
 			: "สมบูรณ์";
 
-		const summaryStatus: SumTH = summaryStatusFromCycle(cycle.status, evaluateStatus);
+		const summaryStatus: SumTH = cycle.status !== "SUMMARY" ? "ยังไม่สรุป"
+									: ackSet.has(emp.id) ? "สมบูรณ์"
+									: "ยังไม่สรุป";
 
 		return {
 			id: emp.id,

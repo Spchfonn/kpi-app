@@ -39,7 +39,7 @@ export default function EvaluationCycleMenuBar({
 				สถานะการทำงานของพนักงานทั้งหมด
 			</button>
 
-			<button 
+			{/* <button 
 				className={tabClass(active === "kpiStructure")}
 				onClick={() => onChange?.("kpiStructure")}>
 				โครงสร้างตัวชี้วัด
@@ -49,7 +49,7 @@ export default function EvaluationCycleMenuBar({
 				className={tabClass(active === "dashboard")}
 				onClick={() => onChange?.("dashboard")}>
 				Dashboard
-			</button>
+			</button> */}
 		</div>
 	)
 }

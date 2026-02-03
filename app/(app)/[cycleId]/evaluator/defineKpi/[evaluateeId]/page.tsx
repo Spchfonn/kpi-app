@@ -185,10 +185,10 @@ async function fetchJson(url: string, init?: RequestInit) {
 
 const page = () => {
 	const router = useRouter();
-	const { cycleId, evaluateeId } = useParams<{
-		cycleId: string;
-		evaluateeId: string;
-	}>();
+	const params = useParams();
+	const cycleId = (params?.cycleId as string) || "";
+	const evaluateeId = (params?.evaluateeId as string) || "";
+	const ready = Boolean(cycleId && evaluateeId);
 	const [evaluateeName, setEvaluateeName] = useState<string>("");
 	const [employeeData, setEmployeeData] = useState<any>(null);
 
@@ -278,6 +278,7 @@ const page = () => {
 	const [targetKpiCount, setTargetKpiCount] = useState<number>(5);
 
 	useEffect(() => {
+		if (!cycleId) return;
 		(async () => {
 			try {
 				const res = await fetch(`/api/evaluationCycles/${encodeURIComponent(cycleId)}/gates`, { cache: "no-store" });
@@ -290,6 +291,7 @@ const page = () => {
 	}, [cycleId]);
 
 	useEffect(() => {
+		if (!ready) return;
 		(async () => {
 			setLoading(true);
 			setError("");
@@ -350,8 +352,9 @@ const page = () => {
 				setCycleStartIso(jPlan.data.cycle?.startDate ?? "");
 				setCycleEndIso(jPlan.data.cycle?.endDate ?? "");
 		
-				setEvaluateeName(jPlan.data.evaluatee?.fullNameTh ?? "");
-				setEmployeeData(jPlan.data.evaluatee ?? null);
+				const ev = jPlan.data.evaluatee;
+				setEvaluateeName(ev?.fullNameTh ?? ev?.fullName ?? ev?.fullNameEn ?? "");
+				setEmployeeData(ev ?? null);
 		
 				const loadedTree: Node[] = (jPlan.data.tree ?? []).map(normalizeNode);
 				setTree(loadedTree);

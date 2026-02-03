@@ -69,9 +69,6 @@ export default function ScoreBoxForQuantitativeKpi({
                   onChange={(e) => setValue(lvl, e.target.value)}
                   className="w-full bg-transparent outline-none text-right text-myApp-blueDark text-smallTitle font-medium border-b-2 border-myApp-shadow"
                 />
-                <span className="text-smallTitle font-medium text-myApp-blueDark shrink-0">
-                  {unit}
-                </span>
             </div>
             </React.Fragment>
         ))}

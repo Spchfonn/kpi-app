@@ -25,7 +25,7 @@ export default function AllCyclesDashboard() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch("/api/dashboard/org-trend");
+        const res = await fetch("/api/admin/dashboard/org-trend");
         const json = await res.json();
         
         if (json.data && json.data.length > 0) {
@@ -59,10 +59,10 @@ export default function AllCyclesDashboard() {
       
       {/* Chart Section */}
       <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-        <h3 className="text-lg font-semibold text-gray-800 mb-2">แนวโน้มคะแนนเฉลี่ยรายแผนก (Department Trends)</h3>
-        <p className="text-sm text-gray-500 mb-6">เปรียบเทียบผลการประเมินของแต่ละแผนกในแต่ละรอบการประเมิน</p>
+        <h3 className="text-midTitle font-semibold text-myApp-blueDark mb-2">แนวโน้มคะแนนเฉลี่ยรายแผนก (Department Trends)</h3>
+        <p className="text-smallTitle text-gray-500 mb-5">เปรียบเทียบผลการประเมินของแต่ละแผนกในแต่ละรอบการประเมิน</p>
         
-        <div className="h-[450px] w-full">
+        <div className="h-100 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
               data={data}
@@ -95,21 +95,21 @@ export default function AllCyclesDashboard() {
 
       {/* Table Section (Optional: ดูตัวเลขละเอียด) */}
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-x-auto">
-        <table className="w-full text-left border-collapse min-w-[600px]">
-            <thead className="bg-gray-50 border-b">
+        <table className="w-full text-left border-collapse min-w-150">
+            <thead className="bg-myApp-blue">
                 <tr>
-                    <th className="px-6 py-4 text-sm font-semibold text-gray-700 w-40">รอบการประเมิน</th>
+                    <th className="px-5 py-3 text-body font-semibold text-myApp-cream w-40">รอบการประเมิน</th>
                     {depts.map(d => (
-                         <th key={d} className="px-4 py-4 text-sm font-semibold text-gray-700 text-center">{d}</th>
+                         <th key={d} className="px-4 py-4 text-body-changed font-semibold text-myApp-cream text-center">{d}</th>
                     ))}
                 </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
                 {data.map((row) => (
                     <tr key={row.cycleId} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 text-sm font-medium text-gray-900">{row.cycleName}</td>
+                        <td className="px-5 py-3 text-body font-semibold text-myApp-blueDark">{row.cycleName}</td>
                         {depts.map(d => (
-                             <td key={d} className="px-4 py-4 text-sm text-gray-600 text-center">
+                             <td key={d} className="px-4 py-4 text-body font-semibold text-myApp-blueDark text-center">
                                 {row[d] ? row[d].toFixed(2) : "-"}
                              </td>
                         ))}
