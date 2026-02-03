@@ -22,11 +22,11 @@ export default function AdminMenuBar({
 				รอบการประเมิน
 			</button>
 
-			<button
+			{/* <button
 				className={`${base} ${activeTab === "orgStructure" ? active : inactive}`}
 				onClick={() => onChange("orgStructure")}>
 				โครงสร้างองค์กร
-			</button>
+			</button> */}
 
 			<button
 				className={`${base} ${activeTab === "dashboard" ? active : inactive}`}

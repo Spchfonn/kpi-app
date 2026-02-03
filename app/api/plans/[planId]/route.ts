@@ -58,6 +58,23 @@ function buildEmployeeName(e: any) {
 	return `${prefixTh}${first}${last}`.trim() || e.employeeNo || "-";
 }
 
+function shapeEmployeeForClient(e: any) {
+	if (!e) return null;
+	return {
+	  // keep old field for your existing UI
+	  fullNameTh: buildEmployeeName(e),
+  
+	  employeeNo: e.employeeNo ?? null,
+	  prefixName: e.prefixName ?? null,
+	  name: e.name ?? null,
+	  lastName: e.lastName ?? null,
+  
+	  position: e.position ? { id: e.position.id, name: e.position.name } : null,
+	  level: e.level ? { id: e.level.id, name: e.level.name } : null,
+	  organization: e.organization ? { id: e.organization.id, name: e.organization.name } : null,
+	};
+}
+
 export async function GET(
 	_request: Request,
 	ctx: { params: Promise<{ planId: string }> }
@@ -68,51 +85,82 @@ export async function GET(
 		await loadPlanContext(planId);
 
 		const plan = await prisma.kpiPlan.findUnique({
-			where: { id: planId },
+		where: { id: planId },
+		select: {
+			id: true,
+			assignmentId: true,
+			version: true,
+			status: true,
+			updatedAt: true,
+			confirmRequestedAt: true,
+			confirmStatus: true,
+			confirmTarget: true,
+
+			assignment: {
 			select: {
-				id: true,
-				assignmentId: true,
-				version: true,
-				status: true,
-				updatedAt: true,
-				confirmRequestedAt: true,
-				confirmStatus: true,
-    			confirmTarget: true,
+				cycle: { select: { startDate: true, endDate: true } },
 
-				assignment: {
-					select: {
-						cycle: { select: { startDate: true, endDate: true } },
-						evaluatee: { select: { prefixName: true, name: true, lastName: true, employeeNo: true } },
-						evaluator: { select: { prefixName: true, name: true, lastName: true, employeeNo: true } },
-					},
+				evaluatee: {
+				select: {
+					prefixName: true,
+					name: true,
+					lastName: true,
+					employeeNo: true,
+
+					position: { select: { id: true, name: true } },
+					level: { select: { id: true, name: true } },
+					organization: { select: { id: true, name: true } },
 				},
-
-				nodes: {
-					orderBy: [
-						{ parentId: "asc" },
-						{ sortOrder: "asc" },
-						{ createdAt: "asc" },
-					],
-					include: {
-						type: { select: { id: true, type: true, name: true, rubric: true } },
-					},
 				},
+				evaluator: {
+				select: {
+					prefixName: true,
+					name: true,
+					lastName: true,
+					employeeNo: true,
 
-				events: {
-					orderBy: { createdAt: "asc" },
-					select: {
-						id: true,
-						type: true,
-						fromStatus: true,
-						toStatus: true,
-						target: true,
-						note: true,
-						meta: true,
-						createdAt: true,
-						actor: { select: { prefixName: true, name: true, lastName: true, employeeNo: true } },
-					},
+					position: { select: { id: true, name: true } },
+					level: { select: { id: true, name: true } },
+					organization: { select: { id: true, name: true } },
+				},
 				},
 			},
+			},
+
+			nodes: {
+			orderBy: [{ parentId: "asc" }, { sortOrder: "asc" }, { createdAt: "asc" }],
+			include: {
+				type: { select: { id: true, type: true, name: true, rubric: true } },
+			},
+			},
+
+			events: {
+			orderBy: { createdAt: "asc" },
+			select: {
+				id: true,
+				type: true,
+				fromStatus: true,
+				toStatus: true,
+				target: true,
+				note: true,
+				meta: true,
+				createdAt: true,
+				actor: {
+				select: {
+					prefixName: true,
+					name: true,
+					lastName: true,
+					employeeNo: true,
+
+					// (optional) if you ever show actor detail
+					position: { select: { id: true, name: true } },
+					level: { select: { id: true, name: true } },
+					organization: { select: { id: true, name: true } },
+				},
+				},
+			},
+			},
+		},
 		});
 
 		if (!plan) {
@@ -128,9 +176,9 @@ export async function GET(
 		const evaluator = plan.assignment?.evaluator;
 
 		return NextResponse.json(
-		{
-			ok: true,
-			data: {
+			{
+			  ok: true,
+			  data: {
 				id: plan.id,
 				assignmentId: plan.assignmentId,
 				version: plan.version,
@@ -139,15 +187,16 @@ export async function GET(
 				confirmRequestedAt: plan.confirmRequestedAt,
 				confirmStatus: plan.confirmStatus,
 				confirmTarget: plan.confirmTarget,
+	  
 				cycle: plan.assignment?.cycle ?? null,
-				evaluatee: evaluatee
-					? { fullNameTh: buildEmployeeName(evaluatee), employeeNo: evaluatee.employeeNo }
-					: null,
-				evaluator: evaluator
-					? { fullNameTh: buildEmployeeName(evaluator), employeeNo: evaluator.employeeNo }
-					: null,
+	  
+				evaluatee: shapeEmployeeForClient(evaluatee),
+				evaluator: shapeEmployeeForClient(evaluator),
+	  
 				tree,
-				events: (plan as any).events?.map((ev: any) => ({
+	  
+				events:
+				  (plan as any).events?.map((ev: any) => ({
 					id: ev.id,
 					type: ev.type,
 					fromStatus: ev.fromStatus,
@@ -156,13 +205,11 @@ export async function GET(
 					note: ev.note,
 					meta: ev.meta,
 					createdAt: ev.createdAt,
-					actor: ev.actor
-					  ? { fullNameTh: buildEmployeeName(ev.actor), employeeNo: ev.actor.employeeNo }
-					  : null,
-				})) ?? [],
+					actor: shapeEmployeeForClient(ev.actor),
+				  })) ?? [],
+			  },
 			},
-		},
-		{ status: 200 }
+			{ status: 200 }
 		);
 	} catch (err: any) {
 		console.error("GET /api/plans/[planId] error:", err);
