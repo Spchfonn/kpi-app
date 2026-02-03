@@ -136,12 +136,19 @@ export async function GET() {
 			{ round: "desc" },
 			{ id: "desc" },
 		],
+		include: {
+			activities: {
+				where: { enabled: true },
+				select: { type: true }, // "DEFINE" | "EVALUATE" | "SUMMARY"
+			},
+		},
 	});
 
 	const data = cycles.map((c) => ({
 		...c,
 		startDateYmd: toYmdBangkok(c.startDate),
 		endDateYmd: toYmdBangkok(c.endDate),
+		activities: c.activities.map((a) => a.type),
 	}));
 
 	return NextResponse.json({ ok: true, data });

@@ -20,21 +20,26 @@ export async function POST(_: Request, { params }: { params: Promise<{ planId: s
 		const confirmTarget = cycle.kpiDefineMode === "EVALUATOR_DEFINES_EVALUATEE_CONFIRMS" ? "EVALUATEE" : "EVALUATOR";
 		const now = new Date();
 
-		const ev = await prisma.$transaction(async (tx) => {
+		const out = await prisma.$transaction(async (tx) => {
+			await tx.evaluationAssignment.update({
+				where: { id: assignment.id },
+				data: { currentPlanId: plan.id },
+			});
+			
 			await tx.kpiPlan.update({
 				where: { id: plan.id },
 				data: {
-				confirmStatus: "REQUESTED",
-				confirmTarget,
-				confirmRequestedAt: now,
-				confirmRequestedById: user.employeeId ?? undefined,
-				rejectReason: null,
-				rejectedAt: null,
-				rejectedById: null,
+					confirmStatus: "REQUESTED",
+					confirmTarget,
+					confirmRequestedAt: now,
+					confirmRequestedById: user.employeeId ?? undefined,
+					rejectReason: null,
+					rejectedAt: null,
+					rejectedById: null,
 				},
 			});
 
-			return tx.kpiPlanConfirmEvent.create({
+			const ev = await tx.kpiPlanConfirmEvent.create({
 				data: {
 					planId: plan.id,
 					type: "REQUESTED",
@@ -46,9 +51,49 @@ export async function POST(_: Request, { params }: { params: Promise<{ planId: s
 				},
 				select: { id: true },
 			});
+
+			// 1) เลือก employee ผู้รับตาม target
+			const receiverEmployeeId =
+			confirmTarget === "EVALUATEE" ? assignment.evaluateeId : assignment.evaluatorId;
+	
+			// 2) หา userId ของ receiver (NotificationRecipient ผูกกับ User)
+			const receiverUser = await tx.user.findFirst({
+				where: { employeeId: receiverEmployeeId },
+				select: { id: true },
+			});
+			if (!receiverUser) {
+				// จะ throw หรือจะข้ามก็ได้ แต่แนะนำ throw เพื่อให้รู้ว่ามี mapping user-employee ขาด
+				throw new Error("receiver user not found");
+			}
+
+			// 3) สร้าง notification + recipient
+			await tx.notification.create({
+				data: {
+					type: "EVALUATOR_REQUEST_EVALUATEE_CONFIRM_KPI" as any,
+			
+					actorId: user.employeeId ?? null,
+					cycleId: cycle.id,
+			
+					refPlanId: plan.id,
+					refAssignmentId: assignment.id,
+					refPlanEventId: ev.id,
+			
+					meta: {
+						cyclePublicId: cycle.publicId,
+						confirmTarget,
+					},
+			
+					recipients: {
+						create: [{ userId: receiverUser.id }],
+					},
+				},
+				select: { id: true },
+			});
+		
+			return { refPlanEventId: ev.id };
 		});
 
-		return NextResponse.json({ ok: true, refPlanEventId: ev.id });
+		return NextResponse.json({ ok: true, refPlanEventId: out.refPlanEventId });
 	} catch (e: any) {
 		return NextResponse.json({ ok: false, message: e?.message ?? "error" }, { status: e?.status ?? 500 });
 	}

@@ -1,12 +1,44 @@
 "use client";
+import CycleGatesCards from '@/components/admin/CycleGatesCards';
 import Button from '@/components/Button'
 import ConfirmBox from '@/components/ConfirmBox';
 import DropDown from '@/components/DropDown';
 import Input from '@/components/InputField'
 import SystemStatusCards, { type StatusKey } from "@/components/SystemStatusCards";
+import { KpiLevelMode } from '@prisma/client';
 import Link from 'next/link'
 import { useRouter } from 'next/navigation';
 import React, { useState } from 'react'
+
+type KpiDefineMode = "EVALUATOR_DEFINES_EVALUATEE_CONFIRMS" | "EVALUATEE_DEFINES_EVALUATOR_APPROVES";
+
+type Gates = {
+	DEFINE: boolean;
+	EVALUATE: boolean;
+	SUMMARY: boolean;
+};
+
+const kpiDefineModeOptions = [
+	{
+	  value: "EVALUATOR_DEFINES_EVALUATEE_CONFIRMS",
+	  label: "ผู้ประเมินกำหนดตัวชี้วัด -> ผู้รับการประเมินรับรอง",
+	},
+	{
+	  value: "EVALUATEE_DEFINES_EVALUATOR_APPROVES",
+	  label: "ผู้รับการประเมินกำหนดตัวชี้วัด -> ผู้ประเมินอนุมัติ",
+	},
+]
+
+const kpiLevelModeOptions = [
+	{
+	  value: "TWO_LEVEL",
+	  label: "กำหนดตัวชั้วัดแบบ 2 ระดับ",
+	},
+	{
+	  value: "THREE_LEVEL",
+	  label: "กำหนดตัวชั้วัดแบบ 3 ระดับ",
+	},
+]
 
 const CreatingEvaluationCyclePage = () => {
 	const router = useRouter();
@@ -26,20 +58,14 @@ const CreatingEvaluationCyclePage = () => {
 
 	const [open, setOpen] = useState(false);
 
-	type KpiDefineMode = "EVALUATOR_DEFINES_EVALUATEE_CONFIRMS" | "EVALUATEE_DEFINES_EVALUATOR_APPROVES";
-
 	const [kpiDefineMode, setKpiDefineMode] = useState<KpiDefineMode>("EVALUATOR_DEFINES_EVALUATEE_CONFIRMS");
+	const [kpiLevelMode, setKpiLevelMode] = useState<KpiLevelMode>("TWO_LEVEL");
 
-	const kpiDefineModeOptions = [
-		{
-		  value: "EVALUATOR_DEFINES_EVALUATEE_CONFIRMS",
-		  label: "ผู้ประเมินกำหนดตัวชี้วัด -> ผู้รับการประเมินรับรอง",
-		},
-		{
-		  value: "EVALUATEE_DEFINES_EVALUATOR_APPROVES",
-		  label: "ผู้รับการประเมินกำหนดตัวชี้วัด -> ผู้ประเมินอนุมัติ",
-		},
-	]
+	const [gates, setGates] = useState<Gates>({
+		DEFINE: false,
+		EVALUATE: false,
+		SUMMARY: false,
+	});
 
 	const handleSaveClick = () => {
 			if (!name || !startDate || !endDate) {
@@ -64,6 +90,8 @@ const CreatingEvaluationCyclePage = () => {
 				startDate,
 				endDate,
 				status: statusMap[systemStatus],
+				kpiDefineMode,
+        		gates,
 			}),
 		});
 
@@ -105,40 +133,40 @@ const CreatingEvaluationCyclePage = () => {
 				{/* form */}
 				<div className='flex flex-col gap-4'>
 					<Input
-						label="ชื่อรอบการประเมิน"
-						placeholder="เช่น ปีการประเมิน 2568 รอบที่ 1"
+						label="ชื่อรอบการประเมิน*"
+						placeholder="เช่น ปีการประเมิน 2026 รอบที่ 1"
 						value={name}
 						onChange={(e) => setName(e.target.value)}
 					/>
 					<Input
-						label="ปีการประเมิน"
-						placeholder="2569"
+						label="ปีการประเมิน*"
+						placeholder="2026"
 						value={year}
 						onChange={(e) => setYear(e.target.value)}
 					/>
 		
 					<Input
-						label="รอบการประเมิน"
+						label="รอบการประเมิน*"
 						placeholder="1"
 						value={round}
 						onChange={(e) => setRound(e.target.value)}
 					/>
 					<Input
-						label="วันเริ่มต้น"
+						label="วันเริ่มต้น*"
 						type="date"
 						value={startDate}
 						onChange={(e) => setStartDate(e.target.value)}
 						className={startDate ? "" : "date-empty"}
 					/>
 					<Input
-						label="วันสิ้นสุด"
+						label="วันสิ้นสุด*"
 						type="date"
 						value={endDate}
      			 	onChange={(e) => setEndDate(e.target.value)}
      			 	className={endDate ? "" : "date-empty"}
 					/>
 					<div className="flex flex-col text-smallTitle font-medium text-myApp-blue gap-1">
-						<p>โหมดการกำหนดตัวชี้วัด</p>
+						<p>โหมดการกำหนดตัวชี้วัด*</p>
 						<DropDown
 							className="w-full max-w-md"
 							value={kpiDefineMode}
@@ -146,9 +174,18 @@ const CreatingEvaluationCyclePage = () => {
 							options={[...kpiDefineModeOptions]}
 						/>
 					</div>
-					<SystemStatusCards
-						active={systemStatus}
-						onChange={setSystemStatus}
+					<div className="flex flex-col text-smallTitle font-medium text-myApp-blue gap-1">
+						<p>รูปแบบการกำหนดตัวชี้วัด*</p>
+						<DropDown
+							className="w-full max-w-md"
+							value={kpiLevelMode}
+							onChange={(v) => setKpiLevelMode(v as KpiLevelMode)}
+							options={[...kpiLevelModeOptions]}
+						/>
+					</div>
+					<CycleGatesCards
+						value={gates}
+						onChange={setGates}
 					/>
 				</div>
 

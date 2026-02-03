@@ -51,6 +51,17 @@ const KPI_DEFINE_MODE_OPTIONS = [
 	},
 ] as const;
 
+const KPI_LEVEL_MODE_OPTIONS = [
+	{
+		value: "TWO_LEVEL",
+		label: "กำหนดตัวชั้วัดแบบ 2 ระดับ",
+	},
+	{
+		value: "THREE_LEVEL",
+		label: "กำหนดตัวชั้วัดแบบ 3 ระดับ",
+	},
+] as const;
+
 export default function Page() {
 
 	const { id } = useParams<{ id: string }>();
@@ -73,6 +84,8 @@ export default function Page() {
 		endDate: "",
 		systemStatus: "define" as StatusKey,
 		kpiDefineMode: "EVALUATOR_DEFINES_EVALUATEE_CONFIRMS",
+		kpiLevelMode: "TWO_LEVEL",
+		gates: { DEFINE: false, EVALUATE: false, SUMMARY: false },
 	});
   
 	// draft for edit
@@ -90,7 +103,8 @@ export default function Page() {
 
 	const saveEdit = async () => {
 		if (tab === "basic") {
-			const res = await fetch(`/api/evaluationCycles/${id}`, {
+			// 1) save cycle basic fields
+			const res = await fetch(`/api/evaluationCycles/${encodeURIComponent(id)}`, {
 				method: "PATCH",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({
@@ -99,12 +113,53 @@ export default function Page() {
 					endDate: draft.endDate,
 					status: statusMap[draft.systemStatus],
 					kpiDefineMode: draft.kpiDefineMode,
+					kpiLevelMode: draft.kpiLevelMode,
 				}),
 			});
 		
-			const json = await res.json().catch(() => null);
+			const resCt = res.headers.get("content-type") || "";
+			const text = await res.text();
+			let json: any = null;
+			try { json = text ? JSON.parse(text) : null; } catch { json = null; }
+
 			if (!res.ok) {
-				console.error("PATCH failed", json);
+				console.error("PATCH failed", {
+					status: res.status,
+					contentType: resCt,
+					bodyPreview: text.slice(0, 200),
+					json,
+				});
+				alert(json?.message ?? `PATCH failed (${res.status})`);
+				return;
+			}
+
+			// 2) save gates (CycleActivity)
+			const resGates = await fetch(
+				`/api/evaluationCycles/${encodeURIComponent(id)}/gates`, {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					credentials: "include",
+					body: JSON.stringify(draft.gates),
+				}
+			);
+		  
+			const ct = resGates.headers.get("content-type") || "";
+			const raw = await resGates.text();
+			let jsonGates: any = null;
+			try {
+				jsonGates = raw ? JSON.parse(raw) : null;
+			} catch {
+				jsonGates = null;
+			}
+
+			if (!resGates.ok || !jsonGates?.ok) {
+				console.error("SAVE GATES failed", {
+					status: resGates.status,
+					contentType: ct,
+					rawPreview: raw.slice(0, 300),
+					json: jsonGates,
+				});
+				alert(jsonGates?.message ?? `บันทึกกิจกรรมของรอบไม่สำเร็จ (${resGates.status})`);
 				return;
 			}
 		
@@ -129,7 +184,7 @@ export default function Page() {
 	  
 		setDeleting(true);
 		try {
-			const res = await fetch(`/api/evaluationCycles/${id}`, {
+			const res = await fetch(`/api/evaluationCycles/${encodeURIComponent(id)}`, {
 				method: "DELETE",
 				headers: { "Content-Type": "application/json" },
 			});
@@ -169,14 +224,20 @@ export default function Page() {
 	useEffect(() => {
 		if (!id) return;
 		(async () => {
-			const [cycleRes, empRes] = await Promise.all([
-				fetch(`/api/evaluationCycles/${id}`, { cache: "no-store" }),
-				fetch(`/api/evaluationCycles/${id}/employeeStatuses`, { cache: "no-store" }),
+			const [cycleRes, empRes, gatesRes] = await Promise.all([
+				fetch(`/api/evaluationCycles/${encodeURIComponent(id)}`, { cache: "no-store" }),
+				fetch(`/api/evaluationCycles/${encodeURIComponent(id)}/employeeStatuses`, { cache: "no-store" }),
+				fetch(`/api/evaluationCycles/${encodeURIComponent(id)}/gates`, { cache: "no-store" }),
 			]);
 		
 			const cycleJson = await cycleRes.json();
+			const gatesJson = await gatesRes.json();
+
 			if (cycleRes.ok) {
 				const c = cycleJson.data;
+				const gates = gatesRes.ok && gatesJson.ok
+							? gatesJson.gates
+							: { DEFINE: false, EVALUATE: false, SUMMARY: false };
 				const next: EvalCycleForm = {
 					name: c.name ?? "",
 					year: c.year ?? "",
@@ -185,6 +246,8 @@ export default function Page() {
 					endDate: c.endDateYmd ?? "",
 					systemStatus: apiStatusToKey(c.status),
 					kpiDefineMode: c.kpiDefineMode ?? "EVALUATOR_DEFINES_EVALUATEE_CONFIRMS",
+					kpiLevelMode: c.kpiLevelMode ?? "TWO_LEVEL",
+					gates,
 				};
 				setData(next);
 				setDraft(next);
@@ -215,7 +278,7 @@ export default function Page() {
 	  
 		(async () => {
 			const res = await fetch(
-				`/api/evaluationCycles/${id}/evaluationAssignments?groupBy=${groupBy}`,
+				`/api/evaluationCycles/${encodeURIComponent(id)}/evaluationAssignments?groupBy=${groupBy}`,
 				{ cache: "no-store" }
 			);
 			const json = await res.json();
@@ -228,7 +291,7 @@ export default function Page() {
 	const fetchGroups = async () => {
 		if (!id) return;
 		const res = await fetch(
-			`/api/evaluationCycles/${id}/evaluationAssignments?groupBy=${groupBy}`,
+			`/api/evaluationCycles/${encodeURIComponent(id)}/evaluationAssignments?groupBy=${groupBy}`,
 			{ cache: "no-store" }
 		);
 		const json = await res.json();
@@ -253,10 +316,15 @@ export default function Page() {
 							draft={draft}
 							setDraft={setDraft}
 							mode={mode}
-							filterValue={draft.kpiDefineMode ?? null}
-							filterOptions={KPI_DEFINE_MODE_OPTIONS as any}
-							onFilterChange={(v) =>
+							kpiDefineModeValue={draft.kpiDefineMode ?? null}
+							kpiDefineModeOptions={KPI_DEFINE_MODE_OPTIONS as any}
+							onKpiDefineModeChange={(v) =>
 								setDraft((prev) => ({ ...prev, kpiDefineMode: v }))
+							}
+							kpiLevelModeValue={draft.kpiLevelMode ?? null}
+							kpiLevelModeOptions={KPI_LEVEL_MODE_OPTIONS as any}
+							onKpiLevelModeChange={(v) =>
+								setDraft((prev) => ({ ...prev, kpiLevelMode: v }))
 							}
 						/>
 					);

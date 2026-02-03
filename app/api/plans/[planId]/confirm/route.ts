@@ -18,13 +18,13 @@ export async function POST(_: Request, { params }: { params: Promise<{ planId: s
 
 		const now = new Date();
 
-		const ev = await prisma.$transaction(async (tx) => {
+		const out = await prisma.$transaction(async (tx) => {
 			// archive any previous ACTIVE plan for this assignment
 			await tx.kpiPlan.updateMany({
 				where: { assignmentId: assignment.id, status: "ACTIVE", NOT: { id: plan.id } },
 				data: { status: "ARCHIVED" },
 			});
-
+		  
 			await tx.kpiPlan.update({
 				where: { id: plan.id },
 				data: {
@@ -34,13 +34,12 @@ export async function POST(_: Request, { params }: { params: Promise<{ planId: s
 					status: "ACTIVE",
 				},
 			});
-
-			// L2: if already in progress and evaluatedPlanId points to another plan -> needsReEval
+		  
 			const willNeedReEval =
 				assignment.evalStatus === "IN_PROGRESS" &&
 				assignment.evaluatedPlanId != null &&
 				assignment.evaluatedPlanId !== plan.id;
-
+		  
 			await tx.evaluationAssignment.update({
 				where: { id: assignment.id },
 				data: {
@@ -48,8 +47,8 @@ export async function POST(_: Request, { params }: { params: Promise<{ planId: s
 					needsReEval: willNeedReEval ? true : assignment.needsReEval,
 				},
 			});
-
-			return tx.kpiPlanConfirmEvent.create({
+		  
+			const ev = await tx.kpiPlanConfirmEvent.create({
 				data: {
 					planId: plan.id,
 					type: "CONFIRMED",
@@ -60,9 +59,46 @@ export async function POST(_: Request, { params }: { params: Promise<{ planId: s
 				},
 				select: { id: true },
 			});
+		  
+			const receiverEmployeeId = assignment.evaluatorId;
+		  
+			const receiverUser = await tx.user.findFirst({
+				where: { employeeId: receiverEmployeeId },
+				select: { id: true },
+			});
+			if (!receiverUser) throw new Error("receiver user not found");
+		  
+			await tx.notification.create({
+				data: {
+					type: "EVALUATEE_CONFIRM_EVALUATOR_KPI",
+					actorId: user.employeeId ?? null,
+					cycleId: cycle.id,
+			
+					refPlanId: plan.id,
+					refAssignmentId: assignment.id,
+					refPlanEventId: ev.id,
+			
+					meta: {
+						assignmentId: assignment.id,
+						planId: plan.id,
+						planEventId: ev.id,
+						evaluateeId: assignment.evaluateeId,
+						evaluatorId: assignment.evaluatorId,
+						action: "CONFIRMED",
+					},
+			
+					recipients: {
+					create: [{ userId: receiverUser.id }],
+					},
+				},
+				select: { id: true },
+			});
+		  
+			return { refPlanEventId: ev.id };
 		});
+		  
+		return NextResponse.json({ ok: true, refPlanEventId: out.refPlanEventId });
 
-		return NextResponse.json({ ok: true, refPlanEventId: ev.id });
 	} catch (e: any) {
 		return NextResponse.json({ ok: false, message: e?.message ?? "error" }, { status: e?.status ?? 500 });
 	}
