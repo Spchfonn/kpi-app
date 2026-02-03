@@ -42,8 +42,13 @@ type AckState = {
 	note: string | null;
 };
 
-async function safeOkJson(url: string) {
-	const res = await fetch(url, { cache: "no-store", credentials: "include" });
+async function safeOkJson(url: string, init?: RequestInit) {
+	const res = await fetch(url, {
+		cache: "no-store",
+		credentials: "include",
+		...(init || {}),
+	});
+  
 	const text = await res.text();
 	let j: any = null;
 	try {
@@ -83,50 +88,54 @@ export default function Page() {
 	const [gates, setGates] = useState<GateState | null>(null);
 	const [ack, setAck] = useState<AckState | null>(null);
 
+	const [ackOpen, setAckOpen] = useState(false);
+	const [ackNote, setAckNote] = useState("");
+	const [ackSaving, setAckSaving] = useState(false);
+
 	const summaryOpen = gates?.SUMMARY ?? false;
 
 	// load list + gates + ack
-	useEffect(() => {
-		(async () => {
-			setLoading(true);
-      		setError("");
-
-			const u = getLoginUser();
-			if (!u?.employeeId || !u?.cycle?.id) {
-				router.push("/sign-in");
-				return;
-			}
-
+	const reloadAll = async () => {
+		setLoading(true);
+		setError("");
+	
+		const u = getLoginUser();
+		if (!u?.employeeId || !u?.cycle?.id) {
+			router.push("/sign-in");
+			return;
+		}
+	
+		try {
+			// 1) evaluators list
+			const list = await safeOkJson(
+				`/api/evaluationAssignments/evaluators?cyclePublicId=${encodeURIComponent(u.cycle.id)}&evaluateeId=${encodeURIComponent(u.employeeId)}`
+			);
+			setItems(list.data.items ?? []);
+		
+			// 2) gates
+			const g = await safeOkJson(`/api/evaluationCycles/${encodeURIComponent(u.cycle.id)}/gates`);
+			setGates(g.gates as GateState);
+		
+			// 3) acknowledgement
 			try {
-				// 1) evaluators list
-				const list = await safeOkJson(
-					`/api/evaluationAssignments/evaluators?cyclePublicId=${encodeURIComponent(
-						u.cycle.id
-					)}&evaluateeId=${encodeURIComponent(u.employeeId)}`
-				);
-				setItems(list.data.items ?? []);
-		
-				// 2) gates
-				const g = await safeOkJson(`/api/evaluationCycles/${encodeURIComponent(u.cycle.id)}/gates`);
-				setGates(g.gates as GateState);
-		
-				// 3) acknowledgement
-				try {
-					const a = await safeOkJson(`/api/evaluationCycles/${encodeURIComponent(u.cycle.id)}/acknowledge`);
-					setAck(a.data as AckState);
-				} catch (e) {
-					// ถ้ายังไม่มี endpoint นี้/ยังไม่ทำ ก็ไม่ให้พังหน้า
-					console.warn("acknowledge fetch skipped:", e);
-					setAck(null);
-				}
-			} catch (e: any) {
-				console.error(e);
-				setError(e?.message ?? "โหลดข้อมูลไม่สำเร็จ");
-				setItems([]);
-			} finally {
-				setLoading(false);
+				const a = await safeOkJson(`/api/evaluationCycles/${encodeURIComponent(u.cycle.id)}/acknowledge`);
+				setAck(a.data as AckState);
+			} catch (e) {
+				console.warn("acknowledge fetch skipped:", e);
+				setAck(null);
 			}
-		})();
+		} catch (e: any) {
+			console.error(e);
+			setError(e?.message ?? "โหลดข้อมูลไม่สำเร็จ");
+			setItems([]);
+		} finally {
+		  	setLoading(false);
+		}
+	};
+	
+	useEffect(() => {
+		reloadAll();
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [router]);
 
 	const headerCount = loading ? "-" : String(items.length);
@@ -140,6 +149,30 @@ export default function Page() {
 		};
 	}, [ack]);
 
+	const canAck = summaryOpen && (!ack || !ack.acknowledged);
+
+	const onAck = async () => {
+		const u = getLoginUser();
+		if (!u?.cycle?.id) return;
+	
+		setAckSaving(true);
+		setError("");
+		try {
+			await safeOkJson(`/api/evaluationCycles/${encodeURIComponent(u.cycle.id)}/acknowledge`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ note: ackNote.trim() || null }),
+			});
+			setAckOpen(false);
+			setAckNote("");
+			await reloadAll();
+		} catch (e: any) {
+		  	setError(e?.message ?? "รับรองผลไม่สำเร็จ");
+		} finally {
+		  	setAckSaving(false);
+		}
+	};
+
    	return (
 	  <>
 	  <div className='px-20 py-7.5'>
@@ -151,6 +184,17 @@ export default function Page() {
 					<div className={`text-sm font-semibold ${ackLabel.className}`}>
 					{ackLabel.text}
 					</div>
+				)}
+
+				{canAck && (
+				<Button
+					variant="primary"
+					primaryColor="green"
+					onClick={() => setAckOpen(true)}
+					disabled={ackSaving}
+				>
+					รับรองผลการประเมิน
+				</Button>
 				)}
 
 				<Button
@@ -203,12 +247,51 @@ export default function Page() {
 							assignmentId={x.assignmentId}
 							name={x.evaluator.fullName}
 							title={x.evaluator.title}
+							acknowledged={!!ack?.acknowledged}
 						/>
 					</div>
 				);
 			})}
 		 </div>
-	  </div>
+	  	</div>
+
+		{ackOpen && (
+			<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+			<div className="w-full max-w-lg rounded-2xl bg-white p-5 shadow-xl">
+				<div className="text-lg font-semibold text-myApp-blueDark">รับรองผลการประเมิน</div>
+				<p className="mt-1 text-sm text-gray-600">
+				ถ้าต้องการ สามารถใส่หมายเหตุประกอบการรับรองผลได้
+				</p>
+
+				<textarea
+				className="mt-3 w-full rounded-xl border p-3 text-sm outline-none focus:ring-2 focus:ring-myApp-blue"
+				rows={4}
+				value={ackNote}
+				onChange={(e) => setAckNote(e.target.value)}
+				placeholder="หมายเหตุ (ไม่บังคับ)"
+				/>
+
+				<div className="mt-4 flex justify-end gap-2">
+				<Button
+					variant="primary"
+					primaryColor="red"
+					onClick={() => setAckOpen(false)}
+					disabled={ackSaving}
+				>
+					ยกเลิก
+				</Button>
+				<Button
+					variant="primary"
+					primaryColor="green"
+					onClick={onAck}
+					disabled={ackSaving}
+				>
+					{ackSaving ? "กำลังรับรอง..." : "ยืนยันรับรองผล"}
+				</Button>
+				</div>
+			</div>
+			</div>
+		)}
 	</>
   );
 }

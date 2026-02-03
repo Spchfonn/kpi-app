@@ -186,7 +186,8 @@ const page = () => {
 				throw new Error(apRes.j.message ?? "โหลดแผนตัวชี้วัดไม่สำเร็จ");
 			}
 	
-			if (!apRes.j.data?.id) {
+			const pid = apRes.j.data?.plan?.id as string | undefined;
+			if (!pid) {
 				// ไม่มี plan ที่ evaluatee เห็นได้ (ยังไม่ request)
 				setPlanId(null);
 				setTree([]);
@@ -199,7 +200,6 @@ const page = () => {
 				return;
 			}
 	
-			const pid = apRes.j.data.id as string;
 			setPlanId(pid);
 	
 			// load plan detail

@@ -97,6 +97,10 @@ export async function GET(_req: Request, ctx: { params: Promise<{ recipientId: s
 				actionAt: r.actionAt,
 				meta: n.meta ?? null,
 				actor: n.actor ? { id: n.actor.id, name: actorName } : null,
+
+				refAssignmentId: n.refAssignmentId ?? null,
+				refPlanId: n.refPlanId ?? null,
+				refPlanEventId: n.refPlanEventId ?? null,
 			},
 		});
 	} catch (e: any) {

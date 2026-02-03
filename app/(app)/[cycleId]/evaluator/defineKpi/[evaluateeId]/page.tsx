@@ -280,12 +280,9 @@ const page = () => {
 	useEffect(() => {
 		(async () => {
 			try {
-				const res = await fetch(
-					`/api/evaluationCycles/${encodeURIComponent(cycleId)}/gates`,
-					{ cache: "no-store" }
-				);
-				const j = await res.json();
-				if (j.ok) setGates(j.gates as GateState);
+				const res = await fetch(`/api/evaluationCycles/${encodeURIComponent(cycleId)}/gates`, { cache: "no-store" });
+				const j = await res.json().catch(() => null);
+				if (res.ok && j?.ok) setGates(j.gates as GateState);
 			} catch (e) {
 				console.error("load gates failed:", e);
 			}
@@ -315,11 +312,30 @@ const page = () => {
 				const aid = found.assignmentId as string;
 				setAssignmentId(aid);
 		
-				// 2) ดึง plan ที่ "current + เห็นได้" ผ่าน assignment endpoint
+				// 2) ดึง plan ที่ "current + เห็นได้"
 				const ap = await fetchJson(`/api/evaluationAssignments/${encodeURIComponent(aid)}/plans`);
-				if (!ap.data?.id) throw new Error("ยังไม่มี KPI plan สำหรับ assignment นี้");
-		
-				const pid = ap.data.id as string;
+				let pid = ap.data?.plan?.id as string | undefined;
+
+				// ครั้งแรกยังไม่มี plan -> สร้าง DRAFT ก่อน
+				if (!pid) {
+					const created = await fetchJson(
+						`/api/evaluationAssignments/${encodeURIComponent(aid)}/plans`,
+						{
+						method: "POST",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify({ status: "DRAFT" }), // หรือ "ACTIVE" ถ้าคุณอยาก set currentPlanId เลย
+						}
+					);
+
+					pid = created.data?.id as string | undefined;
+				}
+
+				if (!pid) {
+					setError("ยังไม่สามารถสร้าง KPI plan ได้");
+					setLoading(false);
+					return;
+				}
+
 				setPlanId(pid);
 		
 				// 3) ดึง types + plan detail (plan detail ใหม่อยู่ที่ /api/plans/:planId)
@@ -658,6 +674,15 @@ const page = () => {
 							</>
 						) : (
 							<>
+							{/* [ส่วนที่ต้องเพิ่ม]: แสดงข้อความเตือนสีแดงถ้าน้ำหนักผิด */}
+							{!isWeightValid && (
+								<div className="flex items-center text-myApp-red text-sm font-medium animate-pulse mr-2">
+								<svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+									<path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+								</svg>
+								{validationErrorMsg}
+								</div>
+							)}
 							<Button onClick={cancelEdit} primaryColor="red" disabled={!defineOpen || saving}>ยกเลิก</Button>
 							<Button 
 								onClick={saveEdit} 
@@ -669,15 +694,6 @@ const page = () => {
 							</Button>
 							</>
 						)}
-                      {/* [ส่วนที่ต้องเพิ่ม]: แสดงข้อความเตือนสีแดงถ้าน้ำหนักผิด */}
-                      {!isWeightValid && (
-                        <div className="flex items-center text-myApp-red text-sm font-medium animate-pulse mr-2">
-                           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                           </svg>
-                           {validationErrorMsg}
-                        </div>
-                      )}
 					</div>
 				}
 			</div>

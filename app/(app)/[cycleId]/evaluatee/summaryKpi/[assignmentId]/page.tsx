@@ -124,6 +124,18 @@ function computeSummary(
 	return { overallPercent, itemByNode, groupByNode };
 }
 
+function formatBangkok(dtIso: string) {
+	const d = new Date(dtIso);
+	return new Intl.DateTimeFormat("th-TH", {
+	  timeZone: "Asia/Bangkok",
+	  year: "numeric",
+	  month: "2-digit",
+	  day: "2-digit",
+	  hour: "2-digit",
+	  minute: "2-digit",
+	}).format(d);
+}
+
 export default function Page() {
 	const router = useRouter();
 	const { cycleId, assignmentId } = useParams<{
@@ -143,6 +155,8 @@ export default function Page() {
 	const [scores, setScores] = useState<Record<string, EvalScoreState>>({});
 	const [scoresVisible, setScoresVisible] = useState(false);
 
+	const [submittedAt, setSubmittedAt] = useState<string | null>(null);
+
 	// โหลดทุกอย่าง
 	useEffect(() => {
 		(async () => {
@@ -160,18 +174,22 @@ export default function Page() {
 			const ap = await fetchOkJson(
 				`/api/evaluationAssignments/${encodeURIComponent(assignmentId)}/plans`
 			);
-			if (!ap.data?.id) {
+
+			const pid: string | undefined = ap.data?.plan?.id;
+
+			const subAt: string | undefined = ap.data?.assignment?.submittedAt;
+        	setSubmittedAt(subAt ?? null);
+
+			if (!pid) {
 				// ยังไม่มี plan ที่ evaluatee เห็นได้ (หรือยังไม่ confirm)
 				setPlanId(null);
 				setTree([]);
 				setScores({});
 				setScoresVisible(false);
 				setEvaluateeName("");
-				setLoading(false);
 				return;
 			}
 
-			const pid = ap.data.id as string;
 			setPlanId(pid);
 
 			// 2) โหลด tree + rubric จาก plan
@@ -266,16 +284,19 @@ export default function Page() {
 			</p>
 
 			<div className="flex ml-auto gap-2 items-center">
-			<p className="text-title font-semibold text-myApp-blueDark">
-				คะแนนรวม
-			</p>
-			<p className="text-title font-semibold text-myApp-blueDark">
-				{scoresVisible
-				? preview.overallPercent === null
-					? "-"
-					: `${preview.overallPercent}%`
-				: "-"}
-			</p>
+				<div className="text-smallTitle font-medium text-myApp-blueDark">
+					{submittedAt ? `ส่งผลการประเมินเมื่อ ${formatBangkok(submittedAt)}` : "ยังไม่ได้ส่งผลการประเมิน"}
+				</div>
+				<p className="text-title font-semibold text-myApp-blueDark">
+					คะแนนรวม
+				</p>
+				<p className="text-title font-semibold text-myApp-blueDark">
+					{scoresVisible
+					? preview.overallPercent === null
+						? "-"
+						: `${preview.overallPercent}%`
+					: "-"}
+				</p>
 			</div>
 		</div>
 
@@ -298,11 +319,7 @@ export default function Page() {
 			<Button
 				variant="primary"
 				primaryColor="blueDark"
-				onClick={() =>
-				router.push(
-					`/${encodeURIComponent(cycleId)}/evaluatee/summaryKpi`
-				)
-				}
+				onClick={() => router.push(`/${encodeURIComponent(cycleId)}/evaluatee/summaryKpi`)}
 			>
 				กลับ
 			</Button>

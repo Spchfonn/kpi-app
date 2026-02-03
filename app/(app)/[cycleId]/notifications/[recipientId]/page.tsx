@@ -35,13 +35,13 @@ export default function Page() {
 					case "EVALUATOR_REQUEST_EVALUATEE_DEFINE_KPI":
 						return router.replace(`/${cycleId}/evaluatee/defineKpi`);
 					case "EVALUATOR_REQUEST_EVALUATEE_CONFIRM_KPI":
-						return router.replace(`/${cycleId}/evaluatee/confirmKpi/${m.assignmentId}`);
+						return router.replace(`/${cycleId}/evaluatee/confirmKpi/${n.refAssignmentId ?? m.assignmentId}`)
 					case "EVALUATEE_REQUEST_EVALUATOR_APPROVE_KPI":
-						return router.replace(`/${cycleId}/evaluator/confirmKpi/${m.assignmentId}`);
+						return router.replace(`/${cycleId}/evaluator/confirmKpi/${n.refAssignmentId ?? m.assignmentId}`)
 					case "EVALUATEE_CONFIRM_EVALUATOR_KPI":
 						return router.replace(`/${cycleId}/evaluator/defineKpi/${m.evaluateeId}`);
 					case "EVALUATEE_REJECT_EVALUATOR_KPI":
-						return router.replace(`/${cycleId}/evaluator/confirmKpi/${m.assignmentId}`);
+						return router.replace(`/${cycleId}/evaluator/confirmKpi/${n.refAssignmentId ?? m.assignmentId}`)
 					case "EVALUATOR_APPROVE_EVALUATEE_KPI":
 						return router.replace(`/${cycleId}/evaluatee/defineKpi/${m.evaluateeId}`);
 					case "EVALUATOR_REJECT_EVALUATEE_KPI":

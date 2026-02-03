@@ -17,6 +17,7 @@ type Props = {
   name: string;
   title: string;
   stripColor?: StripColor;
+  acknowledged?: boolean;
 };
 
 function PillButton({
@@ -51,6 +52,7 @@ export default function EvaluateeCardForSummaryKpi({
   name,
   title,
   stripColor = "red",
+  acknowledged = false,
 }: Props) {
 	const router = useRouter();
 	const pathname = usePathname();
@@ -61,7 +63,7 @@ export default function EvaluateeCardForSummaryKpi({
   
 	  const parts = pathname.split("/").filter(Boolean);
 
-	  return "/" + parts.slice(0, 2).join("/") + "/evaluatee/summaryKpi";
+	  return "/" + parts.slice(0, 2).join("/") + "/summaryKpi";
 	}, [pathname]);
   
 	const profileHref = `${base}/${assignmentId}/profile`;
@@ -83,7 +85,7 @@ export default function EvaluateeCardForSummaryKpi({
 			{/* card */}
 			<div className="bg-myApp-white rounded-2xl shadow-sm px-10 py-4 flex gap-8 items-start">
 				{/* left red strip */}
-				<div className={`absolute left-0 top-0 h-full w-5 rounded-l-2xl ${stripBg[stripColor]}`} />
+				<div className={`absolute left-0 top-0 h-full w-5 rounded-l-2xl ${acknowledged ? stripBg["green"] : stripBg["red"]}`} />
 
 				<div>
 					<div className="flex flex-1 gap-4">

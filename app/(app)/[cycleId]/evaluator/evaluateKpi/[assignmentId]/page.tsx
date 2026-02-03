@@ -165,6 +165,18 @@ function computeSummary(tree: KpiTreeNode[], scores: Record<string, EvalScoreSta
 	return { overallPercent, itemByNode, groupByNode };
 }
 
+function formatBangkok(dtIso: string) {
+	const d = new Date(dtIso);
+	return new Intl.DateTimeFormat("en-GB", {
+		timeZone: "Asia/Bangkok",
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+		hour: "2-digit",
+		minute: "2-digit",
+	}).format(d);
+}
+
 async function fetchJson(url: string, init?: RequestInit) {
 	const res = await fetch(url, { cache: "no-store", ...(init || {}) });
 	const text = await res.text();
@@ -197,6 +209,7 @@ const page = () => {
 	const [scoresDraft, setScoresDraft] = useState<Record<string, EvalScoreState>>({});
 
 	const [evalStatus, setEvalStatus] = useState<EvalStatus>("NOT_STARTED");
+	const [submittedAt, setSubmittedAt] = useState<string | null>(null);
 	
 	// 1) load gates
 	useEffect(() => {
@@ -229,6 +242,7 @@ const page = () => {
 				if (!pid) throw new Error("ยังไม่มีตัวชี้วัดที่รับรองแล้วสำหรับการประเมิน");
 
 				setEvalStatus(ap.data.assignment.evalStatus as EvalStatus);
+				setSubmittedAt(ap.data?.assignment?.submittedAt ?? null);
 				setPlanId(pid);
 		
 				// (B) plan detail (tree + rubric)
@@ -394,6 +408,7 @@ const page = () => {
 
 			const ap2 = await fetchJson(`/api/evaluationAssignments/${encodeURIComponent(assignmentId)}/plans`);
 			setEvalStatus(ap2.data.assignment.evalStatus as EvalStatus);
+			setSubmittedAt(ap2.data?.assignment?.submittedAt ?? null);
 
 			setMode("view");
 		} catch (e: any) {
@@ -448,6 +463,11 @@ const page = () => {
 					<p className={`text-button font-semibold ${statusUI?.className}`}>
 						{statusUI.label}
 					</p>
+					{evalStatus === "SUBMITTED" && submittedAt && (
+						<div className="text-center text-smallTitle font-medium text-myApp-blueDark mt-auto">
+							( ส่งผลการประเมินเมื่อ {formatBangkok(submittedAt)} )
+						</div>
+					)}
 				</div>
 				<div className='flex ml-auto gap-2'>
 					<p className='text-title font-semibold text-myApp-blueDark'>สรุปผลคะแนน</p>
