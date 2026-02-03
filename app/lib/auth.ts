@@ -29,9 +29,22 @@ export async function getOptionalUser() {
 	return session.user;
 }
 
+export async function requireAdmin(): Promise<{ id: string; employeeId: string | null; isAdmin: true }> {
+	const user = await getOptionalUser();
+	if (!user) throw new AuthError("Unauthorized", 401);
+	if (!user.isAdmin) throw new AuthError("Forbidden", 403);
+	return { id: user.id, employeeId: user.employeeId ?? null, isAdmin: true };
+}
+
 export async function requireUser(): Promise<{ id: string; employeeId: string; isAdmin: boolean }> {
 	const user = await getOptionalUser();
 	if (!user) throw new AuthError("Unauthorized", 401);
+	if (!user.employeeId) throw new Error("User has no employeeId");
+  	return { id: user.id, employeeId: user.employeeId, isAdmin: user.isAdmin };
+}
+
+export async function requireEmployeeUser(): Promise<{ id: string; employeeId: string; isAdmin: boolean }> {
+	const user = await requireUser();
 	if (!user.employeeId) throw new Error("User has no employeeId");
   	return { id: user.id, employeeId: user.employeeId, isAdmin: user.isAdmin };
 }

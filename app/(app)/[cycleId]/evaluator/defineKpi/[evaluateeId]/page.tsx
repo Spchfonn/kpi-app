@@ -45,6 +45,22 @@ type Node = {
 type PlanConfirmStatus = "DRAFT" | "REQUESTED" | "CONFIRMED" | "REJECTED" | "CANCELLED";
 type PlanConfirmTarget = "EVALUATOR" | "EVALUATEE" | null;
 
+type DraftNodeInput = {
+	tempId: string;
+	parentTempId: string | null;
+	nodeType: NodeType;
+	title: string;
+	description?: string | null;
+	weightPercent: number;
+	typeId?: string | null;
+	unit?: string | null;
+	startDate?: string | null;
+	endDate?: string | null;
+	sortOrder?: number;
+};
+
+type GateState = { DEFINE: boolean; EVALUATE: boolean; SUMMARY: boolean };
+
 const PLAN_CONFIRM_UI: Record<PlanConfirmStatus, { label: string; className: string }> = {
 	"DRAFT": { label: "ยังไม่กำหนดตัวชี้วัด", className: "text-myApp-red" },
 	"REQUESTED": { label: "รอการอนุมัติ/รับรอง", className: "text-myApp-orange" },
@@ -123,7 +139,49 @@ function assignDisplayNo(tree: Node[]): Node[] {
   });
 }
 
+function toDraftInputs(tree: Node[]): DraftNodeInput[] {
+	const out: DraftNodeInput[] = [];
+  
+	const walk = (n: Node, parentTempId: string | null, sortOrder: number) => {
+		const tempId = n.id || `${parentTempId ?? "root"}:${n.displayNo ?? Math.random()}`;
+		out.push({
+			tempId,
+			parentTempId,
+			nodeType: n.nodeType,
+			title: n.title,
+			description: n.description ?? null,
+			weightPercent: n.weightPercent,
+			typeId: n.nodeType === "ITEM" ? (n.typeId ?? null) : null,
+			unit: n.nodeType === "ITEM" ? (n.unit ?? null) : null,
+			startDate: n.nodeType === "ITEM" ? (n.startDate ?? null) : null,
+			endDate: n.nodeType === "ITEM" ? (n.endDate ?? null) : null,
+			sortOrder,
+		});
+	
+		if (n.nodeType === "GROUP") {
+			(n.children ?? []).forEach((c, idx) => walk(c, tempId, idx));
+		}
+	};
+  
+	tree.forEach((g, idx) => walk(g, null, idx));
+	return out;
+}
+
 const getNodeKey = (n: Node) => n.id || n.displayNo || "";
+
+async function fetchJson(url: string, init?: RequestInit) {
+	const res = await fetch(url, { cache: "no-store", ...(init || {}) });
+	const text = await res.text();
+  
+	let j: any = null;
+	try { j = text ? JSON.parse(text) : null; } catch { j = null; }
+  
+	if (!res.ok || !j?.ok) {
+		console.error("API failed", { url, status: res.status, bodyPreview: text.slice(0, 200), json: j });
+		throw new Error(j?.message ?? `Request failed (${res.status})`);
+	}
+	return j;
+}
 
 const page = () => {
 	const router = useRouter();
@@ -146,12 +204,16 @@ const page = () => {
 	const [confirmTarget, setConfirmTarget] = useState<PlanConfirmTarget>(null);
 
 	const isRequested = confirmStatus === "REQUESTED";
-	const lockEdit = confirmStatus === "REQUESTED" || confirmStatus === "CONFIRMED";
 	const isConfirmed = confirmStatus === "CONFIRMED";
+
+	const [gates, setGates] = useState<GateState | null>(null);
+	const defineOpen = gates?.DEFINE ?? true;
+	const lockEdit = !defineOpen || confirmStatus === "REQUESTED" || confirmStatus === "CONFIRMED";
 
 	const [planId, setPlanId] = useState<string | null>(null);
 	const [types, setTypes] = useState<KpiType[]>([]);
 	const [tree, setTree] = useState<Node[]>([]);
+	const [assignmentId, setAssignmentId] = useState<string | null>(null);
 
 	// for handle if click cancel in edit mode
 	const [draftTree, setDraftTree] = useState<Node[]>([]);
@@ -215,7 +277,18 @@ const page = () => {
 	const [showCountModal, setShowCountModal] = useState(false);
 	const [targetKpiCount, setTargetKpiCount] = useState<number>(5);
 
-	// get plan for DB
+	useEffect(() => {
+		(async () => {
+			try {
+				const res = await fetch(`/api/evaluationCycles/${encodeURIComponent(cycleId)}/gates`, { cache: "no-store" });
+				const j = await res.json().catch(() => null);
+				if (res.ok && j?.ok) setGates(j.gates as GateState);
+			} catch (e) {
+				console.error("load gates failed:", e);
+			}
+		})();
+	}, [cycleId]);
+
 	useEffect(() => {
 		(async () => {
 			setLoading(true);
@@ -228,52 +301,62 @@ const page = () => {
 					return;
 				}
 		
-				// (optional) check role
-				// const role = localStorage.getItem("activeRole");
-				// if (role !== "EVALUATOR") router.push("/sign-in/selectRole");
-		
-				const cyclePublicId = cycleId;
-				const evaluatorId = u.employeeId;
-		
-				// 1) resolvePlan -> get planId
-				const resResolve = await fetch(
-					`/api/evaluationAssignments/resolvePlan?cyclePublicId=${encodeURIComponent(
-						cyclePublicId
-					)}&evaluatorId=${encodeURIComponent(evaluatorId)}&evaluateeId=${encodeURIComponent(
-						evaluateeId
-					)}`,
-					{ cache: "no-store" }
+				// 1) หา assignmentId ของ evaluatorId + evaluateeId ใน cycle นี้
+				const list = await fetchJson(
+					`/api/evaluationAssignments/evaluatees?cyclePublicId=${encodeURIComponent(cycleId)}&evaluatorId=${encodeURIComponent(u.employeeId)}`,
 				);
+		
+				const found = (list.data.items as any[]).find((x) => x.evaluatee.id === evaluateeId);
+				if (!found?.assignmentId) throw new Error("ไม่พบ assignment ของผู้รับการประเมินคนนี้");
+		
+				const aid = found.assignmentId as string;
+				setAssignmentId(aid);
+		
+				// 2) ดึง plan ที่ "current + เห็นได้"
+				const ap = await fetchJson(`/api/evaluationAssignments/${encodeURIComponent(aid)}/plans`);
+				let pid = ap.data?.plan?.id as string | undefined;
 
-				const jResolve = await resResolve.json();
-				if (!jResolve.ok) throw new Error(jResolve.message ?? "resolvePlan failed");
+				// ครั้งแรกยังไม่มี plan -> สร้าง DRAFT ก่อน
+				if (!pid) {
+					const created = await fetchJson(
+						`/api/evaluationAssignments/${encodeURIComponent(aid)}/plans`,
+						{
+						method: "POST",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify({ status: "DRAFT" }), // หรือ "ACTIVE" ถ้าคุณอยาก set currentPlanId เลย
+						}
+					);
 
-				const c = jResolve.data.cycle;
-				setCycleStartIso(c.startDate); // ISO string
-				setCycleEndIso(c.endDate);
+					pid = created.data?.id as string | undefined;
+				}
 
-				setEvaluateeName(jResolve.data.evaluatee?.fullNameTh ?? "");
-				setEmployeeData(jResolve.data.evaluatee);
+				if (!pid) {
+					setError("ยังไม่สามารถสร้าง KPI plan ได้");
+					setLoading(false);
+					return;
+				}
 
-				const pid = jResolve.data.planId as string;
 				setPlanId(pid);
 		
-				// 2) get kpiTypes + plan tree (parallel)
-				const [resTypes, resPlan] = await Promise.all([
-					fetch("/api/kpiTypes", { cache: "no-store" }),
-					fetch(`/api/plans/${pid}`, { cache: "no-store" }),
+				// 3) ดึง types + plan detail (plan detail ใหม่อยู่ที่ /api/plans/:planId)
+				const [jTypes, jPlan] = await Promise.all([
+					fetchJson("/api/kpiTypes"),
+					fetchJson(`/api/plans/${pid}`),
 				]);
 		
-				const jTypes = await resTypes.json();
-				const jPlan = await resPlan.json();
+				setTypes(jTypes.data as KpiType[]);
 		
-				if (jTypes.ok) setTypes(jTypes.data as KpiType[]);
-				if (!jPlan.ok) throw new Error(jPlan.message ?? "get plan failed");
+				// jPlan.data: เราปรับ /api/plans/[planId] ให้คืน tree + cycle + evaluatee/evaluator แล้ว
+				setCycleStartIso(jPlan.data.cycle?.startDate ?? "");
+				setCycleEndIso(jPlan.data.cycle?.endDate ?? "");
+		
+				setEvaluateeName(jPlan.data.evaluatee?.fullNameTh ?? "");
+				setEmployeeData(jPlan.data.evaluatee ?? null);
 		
 				const loadedTree: Node[] = (jPlan.data.tree ?? []).map(normalizeNode);
-		
 				setTree(loadedTree);
-				setDraftTree(loadedTree); // initial draft
+				setDraftTree(loadedTree);
+		
 				setConfirmStatus((jPlan.data.confirmStatus ?? "DRAFT") as PlanConfirmStatus);
 				setConfirmTarget((jPlan.data.confirmTarget ?? null) as PlanConfirmTarget);
 			} catch (e: any) {
@@ -283,7 +366,7 @@ const page = () => {
 				setLoading(false);
 			}
 		})();
-	}, [evaluateeId, router]);
+	}, [cycleId, evaluateeId, router]);
 
 	// edit controls
 	const startEdit = () => {
@@ -299,28 +382,35 @@ const page = () => {
 
 	const saveEdit = async () => {
 		if (!planId) return;
-	
+	  
 		setSaving(true);
 		setError("");
-	
+	  
 		try {
-			const payload = { nodes: draftTree.map(stripForPut) };
+			const nodes = toDraftInputs(draftTree);
 		
-			const res = await fetch(`/api/plans/${planId}/tree`, {
-				method: "PUT",
+			const res = await fetch(`/api/plans/${planId}/saveDraft`, {
+				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(payload),
+				body: JSON.stringify({ nodes }),
 			});
-			const j = await res.json();
-			if (!j.ok) {
-				const msg = j.message ?? (j.errors ? JSON.stringify(j.errors) : "บันทึกไม่สำเร็จ");
-				throw new Error(msg);
-			}
 		
-			// server send tree + displayNo back
-			const nextTree: Node[] = (j.data.tree ?? []).map(normalizeNode);
+			const j = await res.json();
+			if (!j.ok) throw new Error(j.message ?? "บันทึกไม่สำเร็จ");
+		
+			// ถ้า server สร้าง version ใหม่ จะได้ planId ใหม่กลับมา
+			const nextPlanId = (j.planId as string) || planId;
+			if (nextPlanId && nextPlanId !== planId) setPlanId(nextPlanId);
+		
+			// reload plan detail จาก server เพื่อได้ displayNo/type/rubric ถูกต้อง
+			const jPlan = await fetchJson(`/api/plans/${nextPlanId}`);
+			const nextTree: Node[] = (jPlan.data.tree ?? []).map(normalizeNode);
+		
 			setTree(nextTree);
 			setDraftTree(nextTree);
+			setConfirmStatus(jPlan.data.confirmStatus);
+			setConfirmTarget(jPlan.data.confirmTarget ?? null);
+		
 			setMode("view");
 		} catch (e: any) {
 			console.error(e);
@@ -344,23 +434,17 @@ const page = () => {
 	  
 		try {
 			const endpoint = isRequested
-				? `/api/plans/${planId}/cancelRequestConfirm`
-				: `/api/plans/${planId}/requestConfirm`;
+				? `/api/plans/${planId}/cancel`
+				: `/api/plans/${planId}/request`;
 		
 			const res = await fetch(endpoint, { method: "POST" });
 			const j = await res.json();
 			if (!j.ok) throw new Error(j.message ?? "ทำรายการไม่สำเร็จ");
 		
-			const reloadPlanStatus = async () => {
-				const r = await fetch(`/api/plans/${planId}`, { cache: "no-store" });
-				const j = await r.json();
-				if (r.ok && j.ok) {
-					setConfirmStatus(j.data.confirmStatus);
-					setConfirmTarget(j.data.confirmTarget ?? null);
-				}
-			};
-			  
-			await reloadPlanStatus();
+			// reload status จาก plan ใหม่
+			const jPlan = await fetchJson(`/api/plans/${planId}`);
+			setConfirmStatus(jPlan.data.confirmStatus);
+			setConfirmTarget(jPlan.data.confirmTarget ?? null);
 		} catch (e: any) {
 		  	setError(e?.message ?? "ทำรายการไม่สำเร็จ");
 		} finally {
@@ -531,6 +615,12 @@ const page = () => {
 				</p>
 			</div>
 
+			{!defineOpen && (
+				<div className="mb-3 p-3 rounded-xl border border-yellow-200 bg-yellow-50 text-sm text-yellow-800">
+					ตอนนี้ยังไม่เปิดช่วง “กำหนดตัวชี้วัด” คุณสามารถดูข้อมูลได้ แต่ไม่สามารถแก้ไข/บันทึก/ส่งขอรับรองได้
+				</div>
+			)}
+
 			{/* menu tab */}
 			<div className='flex items-center mb-3 gap-2.5'>
 				<Button 
@@ -546,7 +636,9 @@ const page = () => {
 						<Button
 							variant="primary"
 							primaryColor="yellow"
-							onClick={goCopyKpi}>
+							onClick={goCopyKpi}
+							disabled={!defineOpen}
+						>
 							คัดลอกตัวชี้วัด
 						</Button>
 
@@ -574,7 +666,7 @@ const page = () => {
 									if (isRequested) setConfirmOpenCancel(true);
 									else setConfirmOpenConfirm(true);
 								}}
-								disabled={saving}
+								disabled={saving || !defineOpen}
 							>
 								{isRequested ? "ยกเลิกการขอให้รับรองตัวชี้วัด" : "ขอให้รับรองตัวชี้วัด"}
 							</Button>
@@ -582,29 +674,26 @@ const page = () => {
 							</>
 						) : (
 							<>
-                      {/* [ส่วนที่ต้องเพิ่ม]: แสดงข้อความเตือนสีแดงถ้าน้ำหนักผิด */}
-                      {!isWeightValid && (
-                        <div className="flex items-center text-myApp-red text-sm font-medium animate-pulse mr-2">
-                           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                           </svg>
-                           {validationErrorMsg}
-                        </div>
-                      )}
-
-                      <Button onClick={cancelEdit} primaryColor="red">ยกเลิก</Button>
-                      
-                      {/* [ส่วนที่ต้องแก้]: เพิ่ม disabled={!isWeightValid} */}
-                      <Button 
-                         onClick={saveEdit} 
-                         variant="primary" 
-                         disabled={!isWeightValid || saving} 
-                         className={!isWeightValid ? "opacity-50 cursor-not-allowed" : ""}
-                      >
-                         บันทึก
-                      </Button>
-                      </>
-                   )}
+							{/* [ส่วนที่ต้องเพิ่ม]: แสดงข้อความเตือนสีแดงถ้าน้ำหนักผิด */}
+							{!isWeightValid && (
+								<div className="flex items-center text-myApp-red text-sm font-medium animate-pulse mr-2">
+								<svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+									<path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+								</svg>
+								{validationErrorMsg}
+								</div>
+							)}
+							<Button onClick={cancelEdit} primaryColor="red" disabled={!defineOpen || saving}>ยกเลิก</Button>
+							<Button 
+								onClick={saveEdit} 
+								variant="primary" 
+								disabled={!defineOpen || saving || !isWeightValid}
+								className={!isWeightValid ? "opacity-50 cursor-not-allowed" : ""}
+							>
+								บันทึก
+							</Button>
+							</>
+						)}
 					</div>
 				}
 			</div>

@@ -22,17 +22,12 @@ const STATUS_TO_STRIP_COLOR: Record<PlanConfirmStatus, StripColor> = {
 };
 
 type Props = {
-  id: string;
   name: string;
   title: string;
   cycleId: string;
-  evaluateeId: string;
   stripColor?: StripColor;
   status?: PlanConfirmStatus;
-  kpiDefineMode: KpiDefineMode;
   assignmentId: string;
-  planId?: string | null;
-  organization: string;
 };
 
 function PillButton({ children, href }: { children: React.ReactNode; href: string; }) {
@@ -43,18 +38,13 @@ function PillButton({ children, href }: { children: React.ReactNode; href: strin
     );
    }
 	
-export default function EvaluatorCardForDefineKpi({
-  id,
+export default function EvaluatorCardForConfirmKpi({
   name,
   title,
   cycleId,
-  evaluateeId,
   stripColor = "red",
   status,
-  kpiDefineMode,
   assignmentId,
-  planId,
-  organization,
 }: Props) {
 
   console.log(`Card ${name}: status =`, status);
@@ -70,25 +60,12 @@ export default function EvaluatorCardForDefineKpi({
   }, [status, stripColor]);
 
   const actionConfig = useMemo(() => {
-    if (!cycleId || !evaluateeId) return { href: "#", label: "Loading..." };
-
-    // กรณี: ผู้ประเมินเป็นคนกำหนด (Evaluator Defines) -> ผู้ถูกประเมินทำได้แค่เข้าไป "ดู" (หรือ Copy)
-    if (kpiDefineMode === "EVALUATOR_DEFINES_EVALUATEE_CONFIRMS") {
-      return {
-        // ไปหน้า copyKpi 
-        href: `/${cycleId}/evaluatee/confirmKpi/${assignmentId}`,
-        label: "ดูข้อมูลตัวชี้วัด",
-      };
-    } 
-    
-    // กรณี: ผู้ถูกประเมินกำหนดเอง (Evaluatee Defines) -> ไปหน้ากำหนด KPI ปกติ
-    else {
-      return {
-        href: `/${cycleId}/evaluatee/defineKpi/${evaluateeId}?evaluatorId=${id}`,
-        label: "กำหนดตัวชี้วัด",
-      };
-    }
-  }, [cycleId, evaluateeId, id, kpiDefineMode]);
+    if (!cycleId || !assignmentId) return { href: "#", label: "Loading..." };
+    return {
+      href: `/${cycleId}/evaluatee/confirmKpi/${assignmentId}`,
+      label: "รับรองตัวชี้วัด",
+    };
+  }, [cycleId, assignmentId]);
 
 	return (
 		<div className="relative w-full max-w-120 max-h-33">
@@ -110,10 +87,12 @@ export default function EvaluatorCardForDefineKpi({
 						<div className="flex-1">
 							<div className="text-button font-semibold text-myApp-blueDark">{name}</div>
 							<div className="text-smallTitle font-medium text-myApp-blueDark/80 mt-1">{title}</div>
-							<div
-								className="text-smallTitle font-medium text-myApp-blueDark/80 mt-1">
-								{organization}
-							</div>
+
+							<button
+								type="button"
+								className="mt-2 inline-flex items-center gap-1 text-smallTitle font-medium text-myApp-blueDark hover:underline">
+								เอกสารข้อตกลง <FiFileText className="text-sm" />
+							</button>
 						</div>
 					</div>
 

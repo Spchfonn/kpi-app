@@ -46,8 +46,7 @@ export default function EvaluationAssignmentTab({
 		reloadGroups,
 	}: Props) {
 
-	const { id } = useParams<{ id: string }>();    // cycleId (/admin/evaluationCycle/[id])
-  	const cycleId = Number(id);
+	const { id: cyclePublicId } = useParams<{ id: string }>();
 
 	//
 	// modal state
@@ -126,7 +125,7 @@ export default function EvaluationAssignmentTab({
 
 	const onSave = async () => {
 		if (!selectedGroup) return;
-		if (!Number.isFinite(cycleId)) { setSaveErr("cycleId ไม่ถูกต้อง"); return; }
+		if (!cyclePublicId) { setSaveErr("cyclePublicId ไม่ถูกต้อง"); return; }
 
 		if (groupBy === "evaluatee") {
 			const normalized = detailEvaluatees.map((x) => ({ ...x, weightPercent: toWeightNum(x.weightPercent ?? 0) }));
@@ -155,12 +154,12 @@ export default function EvaluationAssignmentTab({
 		
 			if (groupBy === "evaluator") {
 				const evaluatorId = selectedGroup.evaluator.id;
-				url = `/api/evaluationCycles/${cycleId}/evaluationAssignments/${evaluatorId}`;
+				url = `/api/evaluationCycles/${encodeURIComponent(cyclePublicId)}/evaluationAssignments/${evaluatorId}`;
 				body = { evaluateeIds: unique.map((x) => x.id) };
 			}
 			else {
 				const evaluateeId = selectedGroup.evaluator.id; // ใน groupBy=evaluatee ฝั่งซ้ายคือผู้รับการประเมิน
-				url = `/api/evaluationCycles/${cycleId}/evaluationAssignments/byEvaluatee/${evaluateeId}`;
+				url = `/api/evaluationCycles/${encodeURIComponent(cyclePublicId)}/evaluationAssignments/byEvaluatee/${evaluateeId}`;
 				body = {
 					evaluatorItems: unique.map((x) => ({
 						evaluatorId: x.id,

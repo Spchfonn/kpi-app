@@ -6,19 +6,19 @@ type EvalTH = "ยังไม่ประเมิน" | "ยังไม่ส
 type SumTH = "ยังไม่สรุป" | "สมบูรณ์";
 
 // remove duplicate key in list
-function uniqBy<T>(arr: T[], keyFn: (x: T) => string) {
-	const m = new Map<string, T>();
-	for (const x of arr) m.set(keyFn(x), x);
+function uniqBy<T>(arr: T[], keyFn: (x: T[]) => string): T[] {
+	const m = new Map<string, any>();
+	for (const x of arr as any[]) m.set(keyFn(x), x);
 	return [...m.values()];
 }
 
 // condition for check status of define kpi
 function defineStatusFromPlan(
-	plan:
-	  | null
-	  | undefined
-	  | { confirmStatus: "DRAFT" | "REQUESTED" | "CONFIRMED" | "REJECTED" | "CANCELLED" }
-  ): DefineTH {
+  plan:
+    | null
+    | undefined
+    | { confirmStatus: "DRAFT" | "REQUESTED" | "CONFIRMED" | "REJECTED" | "CANCELLED" }
+): DefineTH {
 	if (!plan) return "ยังไม่กำหนด";
 	if (plan.confirmStatus === "REQUESTED") return "รอการอนุมัติ";
 	if (plan.confirmStatus === "CONFIRMED") return "สมบูรณ์";
@@ -26,9 +26,7 @@ function defineStatusFromPlan(
 }
 
 // condition for check status of evalaute kpi
-function evaluateStatusFromPlan(
-	evalStatus: "NOT_STARTED" | "IN_PROGRESS" | "SUBMITTED"
-  ): EvalTH {
+function evaluateStatusFromPlan(evalStatus: "NOT_STARTED" | "IN_PROGRESS" | "SUBMITTED"): EvalTH {
 	if (evalStatus === "NOT_STARTED") return "ยังไม่ประเมิน";
 	if (evalStatus === "SUBMITTED") return "สมบูรณ์";
 	return "ยังไม่สมบูรณ์"; // IN_PROGRESS
@@ -41,22 +39,22 @@ function summaryStatusFromCycle(cycleStatus: "DEFINE" | "EVALUATE" | "SUMMARY", 
 }
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
-
-	const { id } = await params;
-	const cycleId = Number( id );
-
-	if (!Number.isFinite(cycleId)) {
+	const { id: cyclePublicId } = await params;
+	if (!cyclePublicId) {
 		return NextResponse.json({ ok: false, message: "invalid id" }, { status: 400 });
 	}
 
-	// 1) get cycle status
+	// 1) lookup cycle by publicId -> get db id + status
 	const cycle = await prisma.evaluationCycle.findUnique({
-		where: { id: cycleId },
+		where: { publicId: cyclePublicId },
 		select: { id: true, status: true },
 	});
+
 	if (!cycle) {
 		return NextResponse.json({ ok: false, message: "not found" }, { status: 404 });
 	}
+
+	const cycleId = cycle.id;
 
 	// 2) get evaluation assignments of this cycle
 	const assignments = await prisma.evaluationAssignment.findMany({
@@ -64,7 +62,6 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 		select: {
 			id: true,
 			evalStatus: true,
-			// all evaluatee -> all employee for show in employee status table
 			evaluatee: {
 				select: {
 					id: true,
@@ -72,31 +69,32 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 					lastName: true,
 					employeeNo: true,
 					position: { select: { name: true } },
-          			level: { select: { name: true } },
+					level: { select: { name: true } },
 				},
 			},
-
-			// current plan of assignment
 			currentPlan: {
 				select: {
-					id: true,
-					status: true,
-					confirmStatus: true,
-					nodes: {
-						select: {
-							nodeType: true,
-							currentSubmission: {
-								select: { calculatedScore: true, finalScore: true },
-							},
-						},
+				id: true,
+				status: true,
+				confirmStatus: true,
+				nodes: {
+					select: {
+					nodeType: true,
+					currentSubmission: {
+						select: { calculatedScore: true, finalScore: true },
 					},
+					},
+				},
 				},
 			},
 		},
 	});
 
-	// 3) get unique evaluatee for show 1 employee / 1 row
-	const evaluatees = uniqBy( assignments.map((a) => a.evaluatee).filter(Boolean), (x) => x.id );
+	// 3) unique evaluatees for 1 row / employee
+	const evaluatees = uniqBy(
+		assignments.map((a) => a.evaluatee).filter(Boolean) as any[],
+		(x: any) => x.id
+	);
 
 	type AssignmentRow = (typeof assignments)[number];
 	const byEvaluateeId = new Map<string, AssignmentRow[]>();
@@ -107,20 +105,24 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 		byEvaluateeId.get(key)!.push(a);
 	}
 
-	const rows = evaluatees.map((emp) => {
+	const rows = evaluatees.map((emp: any) => {
 		const empAssignments = byEvaluateeId.get(emp.id) ?? [];
 
-		// Define: if has any assignment that not define yet -> not define
 		const defineStatuses = empAssignments.map((a) => defineStatusFromPlan(a.currentPlan));
-		const defineStatus: DefineTH = defineStatuses.includes("ยังไม่กำหนด") ? "ยังไม่กำหนด"
-											: defineStatuses.includes("รอการอนุมัติ") ? "รอการอนุมัติ"
-											: "สมบูรณ์";
+		const defineStatus: DefineTH =
+		defineStatuses.includes("ยังไม่กำหนด")
+			? "ยังไม่กำหนด"
+			: defineStatuses.includes("รอการอนุมัติ")
+			? "รอการอนุมัติ"
+			: "สมบูรณ์";
 
-		// Evaluate: if has any assignment that not evaluate yet -> not evaluate
 		const evalStatuses = empAssignments.map((a) => evaluateStatusFromPlan(a.evalStatus));
-		const evaluateStatus: EvalTH = evalStatuses.includes("ยังไม่ประเมิน") ? "ยังไม่ประเมิน"
-											: evalStatuses.includes("ยังไม่สมบูรณ์") ? "ยังไม่สมบูรณ์"
-											: "สมบูรณ์";
+		const evaluateStatus: EvalTH =
+		evalStatuses.includes("ยังไม่ประเมิน")
+			? "ยังไม่ประเมิน"
+			: evalStatuses.includes("ยังไม่สมบูรณ์")
+			? "ยังไม่สมบูรณ์"
+			: "สมบูรณ์";
 
 		const summaryStatus: SumTH = summaryStatusFromCycle(cycle.status, evaluateStatus);
 
@@ -129,8 +131,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 			employeeNo: emp.employeeNo ?? "",
 			name: emp.name,
 			lastName: emp.lastName,
-			position: emp.position ?? "",
-			level: emp.level ?? "",
+			position: emp.position?.name ?? "",
+			level: emp.level?.name ?? "",
 			defineStatus,
 			evaluateStatus,
 			summaryStatus,

@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import AdminMenuBar, { type AdminTabKey } from "@/components/admin/AdminMenuBar";
-import EvaluationCycleTableClient from "./evaluationCycle/EvaluationCycleTableClient";
+import EvaluationCycleTableClient, { Cycle } from "./evaluationCycle/EvaluationCycleTableClient";
 
 // Import components
 import DashboardTab from "./evaluationCycle/[id]/_tabs/DashboardTab"; // ตัวดูรายรอบ
@@ -32,13 +32,18 @@ export default function AdminHomePage() {
       const res = await fetch("/api/evaluationCycles", { cache: "no-store" });
       const json = await res.json();
       if (!res.ok) throw new Error(json?.message ?? "โหลดข้อมูลไม่สำเร็จ");
-      
-      const loadedCycles = json.data ?? [];
-      setCycles(loadedCycles);
 
-      // (Optional) ถ้าอยากให้ Default เป็นรอบล่าสุดแทน Trend ให้แก้ตรงนี้
-      // if (loadedCycles.length > 0) setSelectedDashboardView(String(loadedCycles[0].id));
+      const rows = (json.data ?? []).map((c: any) => ({
+        publicId: c.publicId,
+        id: c.id, // optional
+        name: c.name,
+        startDate: c.startDateYmd ?? c.startDate,
+        endDate: c.endDateYmd ?? c.endDate,
+        status: c.status,
+        activities: c.activities,
+      }));
 
+      setCycles(rows);
     } catch (e: any) {
       setError(e.message ?? "โหลดข้อมูลไม่สำเร็จ");
     } finally {
@@ -53,7 +58,7 @@ export default function AdminHomePage() {
   const renderTab = () => {
     if (tab === "evaluationCycles") {
       if (loading) return <div className="mt-4">Loading...</div>;
-      if (error) return <div className="mt-4 text-red-600">{error}</div>;
+      if (error) return <div className="mt-4 text-myApp-red">{error}</div>;
       return <EvaluationCycleTableClient cycles={cycles} />;
     }
 

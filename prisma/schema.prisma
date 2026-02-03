@@ -21,6 +21,8 @@ model EvaluationCycle {
   assignments EvaluationAssignment[]
   kpiDefineMode KpiDefineMode @default(EVALUATOR_DEFINES_EVALUATEE_CONFIRMS)
   activities CycleActivity[]
+  kpiLevelMode KpiLevelMode @default(TWO_LEVEL)
+  acknowledgements EvaluateeCycleAcknowledgement[]
 
   closedAt   DateTime? @db.DateTime(0)
   closedById String?
@@ -98,6 +100,7 @@ model User {
   employee     Employee? @relation(fields: [employeeId], references: [id])
   sessions Session[]
   notifications NotificationRecipient[]
+  cycleAcknowledgements EvaluateeCycleAcknowledgement[] @relation("UserAcks")
 
   @@map("user")
 }
@@ -138,6 +141,7 @@ model Employee {
   updatedCycleActivities CycleActivity[]      @relation("CycleActivityUpdatedBy")
   closedCycles EvaluationCycle[]              @relation("CycleClosedBy")
   planConfirmEvents KpiPlanConfirmEvent[]     @relation("PlanEventActor")
+  cycleAcknowledgements EvaluateeCycleAcknowledgement[] @relation("EmployeeAcks")
 
   @@index([organizationId])
   @@index([positionId])
@@ -357,6 +361,27 @@ model Session {
   @@index([expiresAt])
 }
 
+model EvaluateeCycleAcknowledgement {
+  id          String   @id @default(uuid())
+  cycleId     Int
+  evaluateeId String
+  userId      String
+
+  acknowledgedAt DateTime @default(now())
+
+  ip        String? @db.VarChar(64)
+  userAgent String? @db.VarChar(255)
+  note      String? @db.VarChar(255)
+
+  cycle     EvaluationCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  evaluatee Employee       @relation("EmployeeAcks", fields: [evaluateeId], references: [id])
+  user      User           @relation("UserAcks", fields: [userId], references: [id])
+
+  @@unique([cycleId, evaluateeId])
+  @@index([cycleId, acknowledgedAt])
+  @@index([evaluateeId, cycleId])
+}
+
 enum SystemStatus {
   DEFINE
   EVALUATE
@@ -447,4 +472,9 @@ enum PlanConfirmEventType {
   CANCELLED
   REOPENED
   COMMENTED
+}
+
+enum KpiLevelMode {
+  TWO_LEVEL    // 2 level: Group -> Item
+  THREE_LEVEL  // 3 level: Group -> SubGroup -> Item
 }
