@@ -8,7 +8,7 @@ import ScoreBoxForCustomKpi from "./ScoreBoxForCustomKpi";
 import ScoreBoxForQualitativeKpi from "./ScoreBoxForQualitativeKpi";
 
 type Rubric =
-  | { kind: "QUANTITATIVE_1_TO_5"; levels: { unit: string | null; score: number; value: number }[] }
+  | { kind: "QUANTITATIVE_1_TO_5"; levels: { unit: string | null; score: number; value: number; desc?: string }[] }
   | { kind: "QUALITATIVE_CHECKLIST"; checklist: { item: string; weight_percent: number }[] }
   | { kind: "CUSTOM_DESCRIPTION_1_TO_5"; levels: { desc: string; score: number }[] };
 
@@ -52,7 +52,7 @@ export type KpiTreeNode = {
 	startDate?: string | null;
 	endDate?: string | null;
 	rubric?: Rubric | null;
-  
+	rubricDraft?: Rubric | null;
 	children: KpiTreeNode[];
 	displayNo?: string;
 };
@@ -114,7 +114,7 @@ export default function TwoLevelKpiTableForEvaluateKpi({
 	};
 
 	const renderRubric = (c: KpiTreeNode) => {
-      const rubric = c.rubric ?? c.type?.rubric;
+      const rubric = c.rubric ?? c.rubricDraft ?? c.type?.rubric;
       
       if (!rubric) return null;
 		switch (rubric.kind) {
@@ -217,7 +217,7 @@ export default function TwoLevelKpiTableForEvaluateKpi({
 										const detailsTypes = t ? [{ id: t.id, type: t.type, name: t.name }] : [];
 										const legacyType = toLegacyKpiType(t?.type ?? null);
 										const s = scores[cKey] ?? { score: "", checkedIds: [] };
-										const rubric = c.rubric ?? c.type?.rubric;
+										const rubric = c.rubric ?? c.rubricDraft ?? c.type?.rubric;
 										const criteria = rubric?.kind === "QUALITATIVE_CHECKLIST"
 														? rubric.checklist.map((x: any, i: number) => ({
 															id: String(i + 1),

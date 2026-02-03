@@ -18,6 +18,7 @@ type Props = {
   title: string;
   stripColor?: StripColor;
   acknowledged?: boolean;
+  organization: string;
 };
 
 function PillButton({
@@ -53,6 +54,7 @@ export default function EvaluateeCardForSummaryKpi({
   title,
   stripColor = "red",
   acknowledged = false,
+  organization,
 }: Props) {
 	const router = useRouter();
 	const pathname = usePathname();
@@ -100,12 +102,7 @@ export default function EvaluateeCardForSummaryKpi({
 						<div className="flex-1">
 							<div className="text-button font-semibold text-myApp-blueDark">{name}</div>
 							<div className="text-smallTitle font-medium text-myApp-blueDark/80 mt-1">{title}</div>
-
-							<button
-								type="button"
-								className="mt-2 inline-flex items-center gap-1 text-smallTitle font-medium text-myApp-blueDark hover:underline">
-								เอกสารข้อตกลง <FiFileText className="text-sm" />
-							</button>
+							<div className="text-smallTitle font-medium text-myApp-blueDark/80 mt-1">{organization}</div>
 
 						</div>
 					</div>
