@@ -14,6 +14,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ planId:
 		if (assignment.evalStatus === "SUBMITTED") forbid("assignment already submitted");
 		if (plan.confirmStatus !== "REQUESTED") forbid("plan is not REQUESTED");
 		if (!user.isAdmin && !isConfirmer(user, cycle, assignment)) forbid("not confirmer");
+		if (plan.status === "ARCHIVED") forbid("archived plan");
 
 		const body = await req.json().catch(() => ({}));
 		const reason = (body?.reason ?? "").toString().trim();
@@ -21,7 +22,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ planId:
 
 		const now = new Date();
 
-		const ev = await prisma.$transaction(async (tx) => {
+		const out = await prisma.$transaction(async (tx) => {
 			await tx.kpiPlan.update({
 				where: { id: plan.id },
 				data: {
@@ -29,10 +30,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ planId:
 					rejectReason: reason,
 					rejectedAt: now,
 					rejectedById: user.employeeId ?? undefined,
+					// (optional) เคลียร์ confirmed fields เผื่อเคย confirm มาก่อน
+					confirmedAt: null,
+					confirmedById: null,
 				},
 			});
-
-			return tx.kpiPlanConfirmEvent.create({
+	  
+			const ev = await tx.kpiPlanConfirmEvent.create({
 				data: {
 					planId: plan.id,
 					type: "REJECTED",
@@ -44,9 +48,47 @@ export async function POST(req: Request, { params }: { params: Promise<{ planId:
 				},
 				select: { id: true },
 			});
+	  
+			const receiverEmployeeId = assignment.evaluatorId;
+	  
+			const receiverUser = await tx.user.findFirst({
+				where: { employeeId: receiverEmployeeId },
+				select: { id: true },
+			});
+			if (!receiverUser) throw new Error("receiver user not found");
+	  
+			await tx.notification.create({
+				data: {
+					type: "EVALUATEE_REJECT_EVALUATOR_KPI",
+					actorId: user.employeeId ?? null,
+					cycleId: cycle.id,
+		
+					refPlanId: plan.id,
+					refAssignmentId: assignment.id,
+					refPlanEventId: ev.id,
+		
+					meta: {
+					assignmentId: assignment.id,
+					planId: plan.id,
+					planEventId: ev.id,
+					evaluateeId: assignment.evaluateeId,
+					evaluatorId: assignment.evaluatorId,
+					action: "REJECTED",
+					rejectReason: reason,
+					// cyclePublicId: cycle.publicId, // ใส่ได้ถ้ามีใน loadPlanContext
+					},
+		
+					recipients: {
+					create: [{ userId: receiverUser.id }],
+					},
+				},
+				select: { id: true },
+			});
+	  
+			return { refPlanEventId: ev.id };
 		});
-
-		return NextResponse.json({ ok: true, refPlanEventId: ev.id });
+	  
+		return NextResponse.json({ ok: true, refPlanEventId: out.refPlanEventId });
 	} catch (e: any) {
 		return NextResponse.json({ ok: false, message: e?.message ?? "error" }, { status: e?.status ?? 500 });
 	}

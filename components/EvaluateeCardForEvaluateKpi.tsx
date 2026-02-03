@@ -21,7 +21,7 @@ const STATUS_TO_COLOR: Record<string, StripColor> = {
 };
 
 type Props = {
-  id: string;
+  assignmentId: string;
   name: string;
   title: string;
   stripColor?: StripColor;
@@ -56,7 +56,7 @@ function PillButton({
   }
 
 export default function EvaluateeCardForEvaluateKpi({
-  id,
+  assignmentId,
   name,
   title,
   stripColor = "red",
@@ -86,8 +86,8 @@ export default function EvaluateeCardForEvaluateKpi({
 		return STATUS_TO_COLOR[status] || stripColor;
 	}, [status, stripColor]);
 
-	const profileHref = `${base}/${id}/profile`;
-	const evaluateKpiHref = `${base}/${id}`;
+	const profileHref = `${base}/${assignmentId}/profile`;
+	const evaluateKpiHref = `${base}/${assignmentId}`;
 
 	return (
 		<div

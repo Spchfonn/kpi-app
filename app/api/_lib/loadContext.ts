@@ -44,7 +44,7 @@ export async function loadPlanContext(planId: string) {
 
 	const cycle = await prisma.evaluationCycle.findUnique({
 		where: { id: assignment.cycleId },
-		select: { id: true, kpiDefineMode: true, closedAt: true },
+		select: { id: true, publicId: true, kpiDefineMode: true, closedAt: true },
 	});
 	if (!cycle) {
 		forbid("cycle not found", 404);
@@ -82,7 +82,7 @@ export async function loadAssignmentContext(assignmentId: string) {
 
 	const cycle = await prisma.evaluationCycle.findUnique({
 		where: { id: assignment.cycleId },
-		select: { id: true, kpiDefineMode: true, closedAt: true },
+		select: { id: true, publicId: true, kpiDefineMode: true, closedAt: true },
 	});
 	if (!cycle) {
 		forbid("cycle not found", 404);

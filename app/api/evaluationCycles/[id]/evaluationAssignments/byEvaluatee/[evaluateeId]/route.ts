@@ -25,14 +25,22 @@ function uniqByEvaluatorId(items: { evaluatorId: string; weightPercent: number }
 }
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string; evaluateeId: string }> }) {
-	const { id, evaluateeId } = await params;
+	const { id: cyclePublicId, evaluateeId } = await params;
 
-	const cycleId = Number(id);
-	if (!Number.isFinite(cycleId)) {
+	if (!cyclePublicId || typeof cyclePublicId !== "string") {
 		return NextResponse.json({ ok: false, message: "invalid cycle id" }, { status: 400 });
 	}
 	if (!evaluateeId) {
 		return NextResponse.json({ ok: false, message: "invalid evaluateeId" }, { status: 400 });
+	}
+
+	const cycle = await prisma.evaluationCycle.findUnique({
+		where: { publicId: cyclePublicId },
+		select: { id: true },
+	});
+	
+	if (!cycle) {
+		return NextResponse.json({ ok: false, message: "cycle not found" }, { status: 404 });
 	}
 
 	const body = await req.json().catch(() => null);
@@ -57,7 +65,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
 	// current assignments of evaluatee in this cycle
 	const current = await prisma.evaluationAssignment.findMany({
-		where: { cycleId, evaluateeId },
+		where: { cycleId: cycle.id, evaluateeId },
 		select: { id: true, evaluatorId: true },
 	});
 
@@ -102,7 +110,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 		if (toAdd.length > 0) {
 			await tx.evaluationAssignment.createMany({
 				data: toAdd.map((x) => ({
-				cycleId,
+				cycleId: cycle.id,
 				evaluatorId: x.evaluatorId,
 				evaluateeId,
 				weightPercent: x.weightPercent ?? 0,
@@ -116,7 +124,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 			await Promise.all(
 				toUpdate.map((x) =>
 				tx.evaluationAssignment.updateMany({
-					where: { cycleId, evaluateeId, evaluatorId: x.evaluatorId },
+					where: { cycleId: cycle.id, evaluateeId, evaluatorId: x.evaluatorId },
 					data: { weightPercent: x.weightPercent ?? 0 },
 				})
 				)
