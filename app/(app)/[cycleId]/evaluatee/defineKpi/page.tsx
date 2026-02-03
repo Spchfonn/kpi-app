@@ -98,6 +98,7 @@ export default function Page({ params }: { params: { id: string } }) {
                   cycleId={currentUserInfo?.cycleId || ""}
                   evaluateeId={currentUserInfo?.employeeId || ""}
                   status={x.confirmStatus}
+                  organization={x.evaluator.organization}
                />
             ))}
          </div>

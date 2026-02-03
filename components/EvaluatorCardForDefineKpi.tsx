@@ -31,6 +31,8 @@ type Props = {
   status?: PlanConfirmStatus;
   kpiDefineMode: KpiDefineMode;
   assignmentId: string;
+  planId?: string | null;
+  organization: string;
 };
 
 function PillButton({ children, href }: { children: React.ReactNode; href: string; }) {
@@ -51,6 +53,8 @@ export default function EvaluatorCardForDefineKpi({
   status,
   kpiDefineMode,
   assignmentId,
+  planId,
+  organization,
 }: Props) {
 
   console.log(`Card ${name}: status =`, status);
@@ -106,12 +110,10 @@ export default function EvaluatorCardForDefineKpi({
 						<div className="flex-1">
 							<div className="text-button font-semibold text-myApp-blueDark">{name}</div>
 							<div className="text-smallTitle font-medium text-myApp-blueDark/80 mt-1">{title}</div>
-
-							<button
-								type="button"
-								className="mt-2 inline-flex items-center gap-1 text-smallTitle font-medium text-myApp-blueDark hover:underline">
-								เอกสารข้อตกลง <FiFileText className="text-sm" />
-							</button>
+							<div
+								className="text-smallTitle font-medium text-myApp-blueDark/80 mt-1">
+								{organization}
+							</div>
 						</div>
 					</div>
 

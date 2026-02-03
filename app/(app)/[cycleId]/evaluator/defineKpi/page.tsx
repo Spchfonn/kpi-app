@@ -96,6 +96,7 @@ export default function Page({ params }: { params: { id: string } })  {
 						name={x.evaluatee.fullName}
 						title={x.evaluatee.title}
 						status={x.confirmStatus}
+						organization={x.evaluatee.organization}
 					/>
 				))}
 			</div>
