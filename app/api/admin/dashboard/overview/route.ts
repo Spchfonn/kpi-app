@@ -13,6 +13,32 @@ function pct(n: number, d: number) {
 	return Math.round((n / d) * 10000) / 100; // 2 decimals
 }
 
+type Activity = { type: "DEFINE" | "EVALUATE" | "SUMMARY"; enabled: boolean; startAt: Date | null; endAt: Date | null };
+
+function pickDisplayStatus(cycle: { closedAt: Date | null; activities: Activity[] }) {
+	if (cycle.closedAt) return "CLOSED";
+
+	const now = new Date();
+
+	const enabled = (cycle.activities ?? []).filter(a => a.enabled);
+
+	// 1) ถ้าตอนนี้อยู่ในช่วงเวลา activity ไหน
+	const inWindow = enabled.find(a => {
+		const sOk = !a.startAt || a.startAt <= now;
+		const eOk = !a.endAt || a.endAt >= now;
+		return sOk && eOk;
+	});
+	if (inWindow) return inWindow.type;
+
+	// 2) ถ้าไม่มีอันไหน match เวลา: ใช้ priority (SUMMARY > EVALUATE > DEFINE)
+	const priority = ["SUMMARY", "EVALUATE", "DEFINE"] as const;
+	for (const t of priority) {
+		if (enabled.some(a => a.type === t)) return t;
+	}
+
+	return "NOT_ACTIVE";
+}
+
 export async function GET(req: Request) {
 	try {
 		const user = await requireAdmin();
@@ -47,6 +73,9 @@ export async function GET(req: Request) {
 				closedAt: true,
 				kpiDefineMode: true,
 				kpiLevelMode: true,
+				activities: {
+					select: { type: true, enabled: true, startAt: true, endAt: true },
+				},
 			},
 		});
 
@@ -152,8 +181,15 @@ export async function GET(req: Request) {
 
 		const cyclesTable = cycles.map(c => {
 			const r = byCycle[c.id];
+
+			const displayStatus = pickDisplayStatus({
+				closedAt: c.closedAt,
+				activities: c.activities as any,
+			});
+
 			return {
 				...r,
+				displayStatus,
 				submittedPct: pct(r.submitted, r.assignmentsTotal),
 				confirmedPct: pct(r.planConfirmed, r.plansTotal),
 				pendingConfirm: r.planRequested,

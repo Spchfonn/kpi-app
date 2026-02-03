@@ -35,6 +35,14 @@ function Bar({ pct }: { pct: number }) {
 	);
 }
 
+const STATUS_TH: Record<string, string> = {
+	DEFINE: "กำหนดตัวชี้วัด",
+	EVALUATE: "ประเมินผล",
+	SUMMARY: "สรุปผล",
+	CLOSED: "ปิดรอบแล้ว",
+	NOT_ACTIVE: "ยังไม่เปิดใช้งาน",
+};
+
 export default function AdminOverviewDashboard({ year }: { year?: number }) {
 	const [loading, setLoading] = useState(true);
 	const [data, setData] = useState<Overview | null>(null);
@@ -136,7 +144,7 @@ export default function AdminOverviewDashboard({ year }: { year?: number }) {
 						{data.cyclesTable.map((r: any) => (
 						<tr key={r.cycleId} className="hover:bg-gray-50">
 							<td className="px-5 py-2.5 text-sm font-medium text-myApp-blueDark">{r.cycleName}</td>
-							<td className="px-5 py-2.5 text-sm text-myApp-blueDark">{r.status}</td>
+							<td className="px-5 py-2.5 text-sm text-myApp-blueDark">{STATUS_TH[r.displayStatus] ?? r.displayStatus}</td>
 							<td className="px-5 py-2.5 text-sm text-myApp-blueDark text-right">{r.assignmentsTotal}</td>
 							<td className="px-5 py-2.5 text-sm text-myApp-blueDark text-right">{r.submittedPct}%</td>
 							<td className="px-5 py-2.5 text-sm text-myApp-blueDark text-right">{r.confirmedPct}%</td>
