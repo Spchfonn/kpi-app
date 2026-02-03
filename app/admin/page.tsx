@@ -7,14 +7,6 @@ import EvaluationCycleTableClient, { Cycle } from "./evaluationCycle/EvaluationC
 import DashboardTab from "./evaluationCycle/[id]/_tabs/DashboardTab"; // ตัวดูรายรอบ
 import AllCyclesDashboard from "@/components/admin/dashboard/AllCyclesDashboard"; // ตัวดู Trend (ใหม่)
 
-type Cycle = {
-  id: number;
-  name: string;
-  startDate: string;
-  endDate: string;
-  status: "DEFINE" | "EVALUATE" | "SUMMARY";
-};
-
 export default function AdminHomePage() {
   const [tab, setTab] = useState<AdminTabKey>("evaluationCycles");
   const [cycles, setCycles] = useState<Cycle[]>([]);

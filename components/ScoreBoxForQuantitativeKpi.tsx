@@ -49,7 +49,7 @@ export default function ScoreBoxForQuantitativeKpi({
         {title}
       </div>
 
-      <div className="grid grid-cols-[24px_2px_60px]">
+      <div className="grid grid-cols-[24px_2px_120px]">
         {/* line */}
         <div className="col-start-2 row-start-1 row-span-5 w-0.5 bg-myApp-blue rounded-full" />
 
@@ -61,7 +61,7 @@ export default function ScoreBoxForQuantitativeKpi({
             </div>
 
             {/* input number */}
-            <div className="col-start-3 h-5.5 flex items-center ml-2">
+            <div className="col-start-3 h-5.5 flex items-center ml-2 gap-2">
                 <input
                   inputMode="decimal"
                   value={getValue(lvl)}
@@ -69,6 +69,9 @@ export default function ScoreBoxForQuantitativeKpi({
                   onChange={(e) => setValue(lvl, e.target.value)}
                   className="w-full bg-transparent outline-none text-right text-myApp-blueDark text-smallTitle font-medium border-b-2 border-myApp-shadow"
                 />
+                <span className="text-smallTitle font-medium text-myApp-blueDark shrink-0">
+                  {unit}
+                </span>
             </div>
             </React.Fragment>
         ))}
