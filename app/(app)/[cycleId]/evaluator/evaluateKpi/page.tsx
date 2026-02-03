@@ -89,6 +89,8 @@ export default function Page({ params }: { params: { id: string } })  {
 							assignmentId={x.assignmentId}
 							name={x.evaluatee.fullName}
 							title={x.evaluatee.title}
+							status={x.evalStatus}
+							organization={x.evaluatee.organization}
 						/>
 					</div>
 				);

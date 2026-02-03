@@ -248,6 +248,7 @@ export default function Page() {
 							name={x.evaluator.fullName}
 							title={x.evaluator.title}
 							acknowledged={!!ack?.acknowledged}
+							organization={x.evaluator.organization}
 						/>
 					</div>
 				);

@@ -113,6 +113,7 @@ export default function Page() {
                 title={x.evaluator.title}
                 cycleId={u?.cycle?.id ?? cycleId} 
                 status={x.confirmStatus}
+                organization={x.evaluator.organization}
             />
           </div>
         ))}
