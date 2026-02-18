@@ -517,15 +517,15 @@ const page = () => {
                            checklist: m.checklist
                         };
                      } else if (kpiType === "quantitative" && m.scoring?.length) {
-                        rubricDraft = {
-                           kind: "QUANTITATIVE_1_TO_5",
-                           levels: m.scoring.map((s: any) => ({
-                              unit: unitMap.get(kpi.kpi_code) || "",
-                              score: s.score,
-                              value: s.condition,
-                              desc: `${s.condition}`,
-                           }))
-                        };
+						rubricDraft = {
+							kind: "QUANTITATIVE_1_TO_5",
+							levels: m.scoring.map((s: any) => ({
+							  unit: unitMap.get(kpi.kpi_code) || "",
+							  score: Number(s.score),
+							  value: Number.isFinite(Number(s.condition)) ? Number(s.condition) : 0,
+							  desc: `${s.condition}`,
+							}))
+						};
                      } else if (kpiType === "custom" && m.scoring?.length) {
                         rubricDraft = {
                            kind: "CUSTOM_DESCRIPTION_1_TO_5",
@@ -542,11 +542,12 @@ const page = () => {
 						title: kpi.title,
 						description: kpi.description,
 						weightPercent: kpi.kpi_percent,
-						typeId: typeObj?.id ?? null, // เก็บ ID ไว้
-						type: typeObj ?? null,       // ใส่ Object Type (ที่มี rubric) เข้าไปด้วย
+						typeId: typeObj?.id ?? null,
+						type: typeObj ?? null,
 						unit: unitMap.get(kpi.kpi_code) || null,
 						startDate: cycleStartIso,
 						endDate: cycleEndIso,
+						rubricDraft,
 						children: [],
 					};
 				}),
@@ -835,7 +836,7 @@ const page = () => {
 					<div className="flex-1 overflow-y-auto p-4 bg-gray-100/50">
 						<TwoLevelKpiTableForGenerateKpi
 							mode="view"
-							showAllDetails={true} // ตัวนี้จะเป็นตัวสั่งให้กางเกณฑ์คะแนนออก
+							showAllDetails={true}
 							selectable={true}
 							selectedIds={aiSelectedIds}
 							onSelectionChange={setAiSelectedIds}
