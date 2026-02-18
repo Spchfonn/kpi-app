@@ -21,6 +21,7 @@ function getLoginUser(): LoginUser | null {
 
 type Item = {
 	assignmentId: string;
+	evaluateeId: string;
 	currentPlanId: string | null;
 	weightPercent: string;
 	evalStatus: string;
@@ -87,6 +88,7 @@ export default function Page({ params }: { params: { id: string } })  {
 					>
 						<EvaluateeCardForEvaluateKpi
 							assignmentId={x.assignmentId}
+							employeeId={x.evaluateeId}
 							name={x.evaluatee.fullName}
 							title={x.evaluatee.title}
 							status={x.evalStatus}

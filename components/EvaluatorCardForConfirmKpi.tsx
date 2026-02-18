@@ -93,7 +93,6 @@ export default function EvaluatorCardForConfirmKpi({
 						</div>
 					</div>
 
-				{/* Action Buttons - เหลือแค่ปุ่มเดียวตามสั่ง */}
        	   <div className="mt-3 flex flex-wrap gap-3">
          	   <PillButton href={actionConfig.href}>{actionConfig.label}</PillButton>
 					</div>
