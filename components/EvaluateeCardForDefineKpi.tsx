@@ -98,7 +98,18 @@ export default function EvaluateeCardForDefineKpi({
   
 	const profileHref = `${base}/${id}/profile`;
 	const defineKpiHref = `${base}/${id}`;
-
+	const cycleId = useMemo(() => {
+		const parts = (pathname ?? "").split("/").filter(Boolean);
+		return parts[0] ?? "";
+	}, [pathname]);
+	const activityFromPath = useMemo(() => {
+		const p = pathname ?? "";
+		if (p.includes("/evaluateKpi")) return "EVALUATE";
+		if (p.includes("/summaryKpi")) return "SUMMARY";
+		return "DEFINE";
+	}, [pathname]);
+	const dashboardHref = `/${cycleId}/employee/${id}/dashboard?activity=${activityFromPath}`;
+	
 	return (
 		<div
 		role="link"
@@ -140,7 +151,7 @@ export default function EvaluateeCardForDefineKpi({
 
 					{/* tabs */}
 					<div className="mt-3 flex flex-wrap gap-3">
-						<PillButton href="/user/dashboard">Dashboard</PillButton>
+						<PillButton href={dashboardHref}>Dashboard</PillButton>
 						<PillButton href={defineKpiHref}>กำหนดตัวชี้วัด</PillButton>
 					</div>
 				</div>

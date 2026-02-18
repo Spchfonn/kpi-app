@@ -22,6 +22,7 @@ const STATUS_TO_COLOR: Record<string, StripColor> = {
 
 type Props = {
   assignmentId: string;
+  employeeId: string;
   name: string;
   title: string;
   stripColor?: StripColor;
@@ -58,6 +59,7 @@ function PillButton({
 
 export default function EvaluateeCardForEvaluateKpi({
   assignmentId,
+  employeeId,
   name,
   title,
   stripColor = "red",
@@ -90,6 +92,17 @@ export default function EvaluateeCardForEvaluateKpi({
 
 	const profileHref = `${base}/${assignmentId}/profile`;
 	const evaluateKpiHref = `${base}/${assignmentId}`;
+	const cycleId = useMemo(() => {
+			const parts = (pathname ?? "").split("/").filter(Boolean);
+			return parts[0] ?? "";
+	}, [pathname]);
+	const activityFromPath = useMemo(() => {
+		const p = pathname ?? "";
+		if (p.includes("/evaluateKpi")) return "EVALUATE";
+		if (p.includes("/summaryKpi")) return "SUMMARY";
+		return "DEFINE";
+	}, [pathname]);
+	const dashboardHref = `/${cycleId}/employee/${employeeId}/dashboard?activity=${activityFromPath}`;
 
 	return (
 		<div
@@ -128,7 +141,7 @@ export default function EvaluateeCardForEvaluateKpi({
 
 					{/* tabs */}
 					<div className="mt-3 flex flex-wrap gap-3">
-						<PillButton href="/user/dashboard">Dashboard</PillButton>
+						<PillButton href={dashboardHref}>Dashboard</PillButton>
 						<PillButton href={evaluateKpiHref}>ประเมินตัวชี้วัด</PillButton>
 					</div>
 				</div>
