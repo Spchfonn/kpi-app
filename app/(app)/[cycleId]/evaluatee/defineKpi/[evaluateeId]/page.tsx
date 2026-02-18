@@ -427,10 +427,10 @@ const page = () => {
                         rubricDraft = {
                            kind: "QUANTITATIVE_1_TO_5",
                            levels: m.scoring.map((s: any) => ({
-                              unit: unitMap.get(kpi.kpi_code) || "",
-                              score: s.score,
-                              value: s.condition,
-                              desc: `${s.condition}`,
+                             unit: unitMap.get(kpi.kpi_code) || "",
+                             score: Number(s.score),
+                             value: Number.isFinite(Number(s.condition)) ? Number(s.condition) : 0,
+                             desc: `${s.condition}`,
                            }))
                         };
                      } else if (kpiType === "custom" && m.scoring?.length) {
